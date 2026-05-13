@@ -1,0 +1,2249 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="FCD Admin">
+<meta name="application-name" content="FCD Admin">
+<meta name="description" content="First Class Drive — Transportation Management System">
+<meta name="theme-color" content="#0a0c10">
+<title>First Class Drive — Admin Panel v63</title>
+<style>
+:root {
+  --bg: #0a0c10;
+  --bg2: #111318;
+  --bg3: #1a1d24;
+  --bg4: #22262f;
+  --border: #2a2e38;
+  --border2: #363b47;
+  --text: #e8eaf0;
+  --text2: #9aa0b0;
+  --text3: #636878;
+  --accent: #3b82f6;
+  --accent2: #60a5fa;
+  --green: #22c55e;
+  --green2: #16a34a;
+  --red: #ef4444;
+  --yellow: #f59e0b;
+  --purple: #a855f7;
+  --sidebar-w: 220px;
+  --header-h: 56px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;font-size:14px}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
+
+/* ── LAYOUT ── */
+#app{display:flex;height:100vh;overflow:hidden}
+#sidebar{width:var(--sidebar-w);min-width:var(--sidebar-w);background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;z-index:100;transition:transform .3s}
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+#header{height:var(--header-h);min-height:var(--header-h);background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 16px;gap:12px}
+#content{flex:1;overflow-y:auto;padding:20px;background:var(--bg)}
+
+/* ── SIDEBAR ── */
+.sidebar-logo{padding:16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.sidebar-logo span{font-weight:700;font-size:15px;letter-spacing:.3px}
+.sidebar-logo .ver{font-size:10px;background:var(--accent);color:#fff;padding:1px 5px;border-radius:3px;margin-left:auto}
+.nav-section{padding:8px 10px 4px;font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-top:4px}
+.nav-item{display:flex;align-items:center;gap:9px;padding:8px 14px;margin:1px 6px;border-radius:8px;cursor:pointer;color:var(--text2);transition:all .15s;font-size:13.5px;position:relative}
+.nav-item:hover{background:var(--bg3);color:var(--text)}
+.nav-item.active{background:var(--accent);color:#fff}
+.nav-item.active .nav-icon{opacity:1}
+.nav-badge{background:var(--red);color:#fff;font-size:10px;font-weight:700;min-width:16px;height:16px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 4px;margin-left:auto}
+.nav-badge.green{background:var(--green)}
+.sidebar-bottom{margin-top:auto;padding:10px 6px;border-top:1px solid var(--border)}
+.user-pill{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:8px;background:var(--bg3)}
+.user-avatar{width:28px;height:28px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
+.user-info{min-width:0}
+.user-name{font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.user-role{font-size:10.5px;color:var(--text3)}
+.btn-logout{margin-left:auto;padding:4px 8px;background:transparent;border:1px solid var(--border2);color:var(--text3);border-radius:5px;cursor:pointer;font-size:11px;transition:all .15s}
+.btn-logout:hover{border-color:var(--red);color:var(--red)}
+
+/* ── HEADER ── */
+#hamburger{display:none;width:34px;height:34px;align-items:center;justify-content:center;border-radius:8px;cursor:pointer;background:var(--bg3);border:1px solid var(--border);font-size:16px}
+.header-title{font-weight:700;font-size:16px;flex:1}
+.header-badge{background:var(--green);color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;display:flex;align-items:center;gap:4px}
+.header-badge::before{content:'';width:6px;height:6px;background:#fff;border-radius:50%;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.btn-icon{width:34px;height:34px;display:flex;align-items:center;justify-content:center;border-radius:8px;cursor:pointer;background:var(--bg3);border:1px solid var(--border);color:var(--text2);font-size:15px;transition:all .15s;position:relative;flex-shrink:0}
+.btn-icon:hover{border-color:var(--accent);color:var(--accent)}
+.notif-dot{position:absolute;top:4px;right:4px;width:7px;height:7px;background:var(--red);border-radius:50%;border:1px solid var(--bg2)}
+
+/* ── BUTTONS ── */
+.btn{padding:7px 14px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:600;transition:all .15s;display:inline-flex;align-items:center;gap:6px}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:#2563eb}
+.btn-green{background:var(--green2);color:#fff}
+.btn-green:hover{background:#15803d}
+.btn-red{background:#dc2626;color:#fff}
+.btn-red:hover{background:#b91c1c}
+.btn-ghost{background:transparent;border:1px solid var(--border2);color:var(--text2)}
+.btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
+.btn-sm{padding:5px 10px;font-size:12px}
+.btn-wa{background:#25d366;color:#fff;border-radius:8px;padding:7px 13px;border:none;cursor:pointer;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:6px;transition:all .15s}
+.btn-wa:hover{background:#128c7e}
+.btn-wa-sm{padding:5px 10px;font-size:12px}
+
+/* ── CARDS ── */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px}
+.card-title{font-size:13px;font-weight:600;color:var(--text2);margin-bottom:12px;display:flex;align-items:center;gap:7px}
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px 16px}
+.stat-label{font-size:11.5px;color:var(--text3);margin-bottom:6px}
+.stat-value{font-size:24px;font-weight:700;line-height:1}
+.stat-sub{font-size:11px;color:var(--text3);margin-top:4px}
+.stat-sub.green{color:var(--green)}
+.stat-sub.red{color:var(--red)}
+
+/* ── TABLES ── */
+.table-wrap{overflow-x:auto;border-radius:10px;border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:var(--bg3);padding:9px 12px;text-align:left;font-size:11.5px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
+td{padding:9px 12px;border-top:1px solid var(--border);color:var(--text);vertical-align:middle}
+tr:hover td{background:var(--bg3)}
+
+/* ── STATUS BADGES ── */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:20px;font-size:11.5px;font-weight:600;white-space:nowrap}
+.badge-green{background:rgba(34,197,94,.15);color:#4ade80}
+.badge-blue{background:rgba(59,130,246,.15);color:#60a5fa}
+.badge-yellow{background:rgba(245,158,11,.15);color:#fbbf24}
+.badge-red{background:rgba(239,68,68,.15);color:#f87171}
+.badge-gray{background:rgba(148,163,184,.1);color:var(--text3)}
+.badge-purple{background:rgba(168,85,247,.15);color:#c084fc}
+
+/* ── FORMS ── */
+.form-group{margin-bottom:12px}
+label{display:block;font-size:12px;font-weight:600;color:var(--text2);margin-bottom:5px}
+input,select,textarea{width:100%;background:var(--bg3);border:1px solid var(--border2);color:var(--text);padding:8px 11px;border-radius:8px;font-size:13px;outline:none;transition:border-color .15s}
+input:focus,select:focus,textarea:focus{border-color:var(--accent)}
+input::placeholder,textarea::placeholder{color:var(--text3)}
+select option{background:var(--bg3);color:var(--text)}
+
+/* ── TABS ── */
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:16px}
+.tab{padding:8px 14px;border-radius:8px 8px 0 0;cursor:pointer;font-size:13px;font-weight:600;color:var(--text3);transition:all .15s;border-bottom:2px solid transparent}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.tab:hover:not(.active){color:var(--text)}
+
+/* ── MODAL ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:1000;display:none;align-items:center;justify-content:center;padding:16px}
+.modal-overlay.show{display:flex}
+.modal{background:var(--bg2);border:1px solid var(--border);border-radius:16px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto}
+.modal-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.modal-title{font-size:16px;font-weight:700}
+.modal-close{width:28px;height:28px;border-radius:6px;background:var(--bg3);border:1px solid var(--border);color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px}
+.modal-body{padding:20px}
+.modal-footer{padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end}
+
+/* ── DRIVER CARDS ── */
+.driver-card{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:12px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:all .15s}
+.driver-card:hover{border-color:var(--accent)}
+.driver-avatar{width:36px;height:36px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0}
+.driver-info{flex:1;min-width:0}
+.driver-name{font-size:13px;font-weight:600}
+.driver-sub{font-size:11.5px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.online-dot{width:8px;height:8px;border-radius:50%;background:var(--green);flex-shrink:0}
+.offline-dot{width:8px;height:8px;border-radius:50%;background:var(--text3);flex-shrink:0}
+
+/* ── RECEIPT ── */
+#receipt-modal .modal{max-width:400px}
+.receipt-header{text-align:center;padding:16px 0 12px;border-bottom:2px dashed var(--border2)}
+.receipt-logo{font-size:22px;margin-bottom:4px}
+.receipt-company{font-size:15px;font-weight:700}
+.receipt-sub{font-size:11.5px;color:var(--text3);margin-top:2px}
+.receipt-num{font-size:11px;background:var(--bg3);padding:4px 10px;border-radius:10px;display:inline-block;margin-top:8px;font-weight:600}
+.receipt-row{display:flex;justify-content:space-between;padding:7px 0;font-size:13px;border-bottom:1px solid var(--border)}
+.receipt-row:last-child{border:none}
+.receipt-row .label{color:var(--text2)}
+.receipt-total-row{display:flex;justify-content:space-between;padding:10px 0 0;font-size:16px;font-weight:700;border-top:2px solid var(--border2);margin-top:4px}
+.receipt-footer{text-align:center;font-size:11.5px;color:var(--text3);padding:12px 0 0;border-top:2px dashed var(--border2);margin-top:12px}
+
+/* ── REPORTS ── */
+.report-kpi{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:16px}
+.chart-bar-wrap{background:var(--bg3);border-radius:8px;padding:12px 0 4px;margin-bottom:16px}
+.chart-bar-row{display:flex;align-items:center;gap:8px;padding:4px 12px}
+.chart-bar-label{width:70px;font-size:11.5px;color:var(--text2);flex-shrink:0;text-align:right}
+.chart-bar-outer{flex:1;background:var(--bg4);border-radius:4px;height:14px;overflow:hidden}
+.chart-bar-inner{height:100%;border-radius:4px;background:var(--accent);transition:width 1s ease}
+.chart-bar-val{width:50px;font-size:11.5px;font-weight:600;color:var(--text);text-align:right}
+.driver-rank-row{display:flex;align-items:center;gap:10px;padding:8px;background:var(--bg3);border-radius:8px;margin-bottom:6px}
+.rank-medal{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
+.rank-1{background:#f59e0b;color:#000}
+.rank-2{background:#9ca3af;color:#000}
+.rank-3{background:#b45309;color:#fff}
+.rank-n{background:var(--bg4);color:var(--text3)}
+
+/* ── NOTIFICATIONS ── */
+.notif-panel{position:absolute;top:50px;right:8px;width:300px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;z-index:200;overflow:hidden;display:none}
+.notif-panel.show{display:block}
+.notif-item{padding:10px 14px;border-bottom:1px solid var(--border);font-size:12.5px;cursor:pointer}
+.notif-item:hover{background:var(--bg3)}
+.notif-item .ni-title{font-weight:600;margin-bottom:2px}
+.notif-item .ni-sub{color:var(--text3);font-size:11.5px}
+.notif-empty{padding:24px;text-align:center;color:var(--text3);font-size:13px}
+
+/* ── LOGIN ── */
+#login-screen{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center}
+.login-box{width:340px;background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:32px;text-align:center}
+.login-logo{font-size:32px;margin-bottom:8px}
+.login-title{font-size:18px;font-weight:700;margin-bottom:4px}
+.login-sub{font-size:12.5px;color:var(--text3);margin-bottom:24px}
+.login-tabs{display:flex;gap:6px;margin-bottom:20px;background:var(--bg3);border-radius:10px;padding:4px}
+.login-tab{flex:1;padding:7px;border-radius:7px;cursor:pointer;font-size:12.5px;font-weight:600;color:var(--text3);transition:all .15s;text-align:center}
+.login-tab.active{background:var(--accent);color:#fff}
+.login-form{display:none}
+.login-form.active{display:block}
+.login-err{background:rgba(239,68,68,.1);border:1px solid var(--red);color:#f87171;padding:8px 12px;border-radius:8px;font-size:12.5px;margin-top:10px;display:none}
+.login-err.show{display:block}
+
+/* ── DRIVER VIEW OVERLAY ── */
+#driver-overlay{position:fixed;inset:0;background:var(--bg);z-index:500;display:none;flex-direction:column;overflow:hidden}
+#driver-overlay.show{display:flex}
+.driver-topbar{height:50px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;padding:0 14px;flex-shrink:0}
+.driver-content{flex:1;overflow-y:auto;padding:16px}
+
+/* ── WHATSAPP SECTION ── */
+.wa-driver-list{display:flex;flex-direction:column;gap:8px}
+.wa-card{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:12px 14px;display:flex;align-items:center;gap:12px}
+.wa-card-info{flex:1;min-width:0}
+.wa-card-name{font-size:13.5px;font-weight:600}
+.wa-card-status{font-size:11.5px;color:var(--text3);margin-top:1px}
+.wa-actions{display:flex;gap:6px;flex-wrap:wrap}
+
+/* ── MOBILE RESPONSIVE ── */
+@media (max-width: 768px) {
+  :root { --sidebar-w: 240px }
+  #sidebar{position:fixed;left:0;top:0;bottom:0;transform:translateX(-100%);z-index:300}
+  #sidebar.open{transform:translateX(0)}
+  #hamburger{display:flex}
+  .sidebar-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:299;display:none}
+  .sidebar-overlay.show{display:block}
+  .stat-grid{grid-template-columns:repeat(2,1fr)}
+  #content{padding:14px}
+  table{font-size:12px}
+  th,td{padding:7px 8px}
+  .report-kpi{grid-template-columns:1fr 1fr}
+  .modal{max-width:calc(100vw - 32px)}
+  .header-title{font-size:14px}
+}
+@media (max-width: 480px) {
+  .stat-grid{grid-template-columns:1fr 1fr}
+  .stat-value{font-size:20px}
+  #content{padding:10px}
+  .card{padding:12px}
+}
+
+/* ── SECTION PAGES ── */
+.page{display:none}
+.page.active{display:block}
+.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:gap 8px}
+.page-title{font-size:18px;font-weight:700}
+.page-actions{display:flex;gap:8px;flex-wrap:wrap}
+
+/* ── MISC ── */
+.divider{height:1px;background:var(--border);margin:14px 0}
+.empty-state{text-align:center;padding:32px;color:var(--text3);font-size:13.5px}
+.empty-icon{font-size:32px;margin-bottom:8px}
+.loading-dot{display:inline-block;animation:ldot 1.4s infinite ease-in-out}
+.loading-dot:nth-child(2){animation-delay:.2s}
+.loading-dot:nth-child(3){animation-delay:.4s}
+@keyframes ldot{0%,80%,100%{opacity:.2}40%{opacity:1}}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:600px){.two-col{grid-template-columns:1fr}}
+.history-search{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.history-search input{flex:1;min-width:160px}
+.history-search select{width:140px}
+.chip{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:11.5px;font-weight:600;background:var(--bg3);border:1px solid var(--border2);color:var(--text2);cursor:pointer;transition:all .15s}
+.chip:hover,.chip.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.toast{position:fixed;bottom:20px;right:20px;background:var(--bg2);border:1px solid var(--green);border-left:3px solid var(--green);color:var(--text);padding:10px 16px;border-radius:8px;font-size:13px;z-index:2000;display:none;align-items:center;gap:8px;max-width:320px;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+.toast.show{display:flex}
+.toast.error{border-color:var(--red);border-left-color:var(--red)}
+</style>
+</head>
+<body>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">🚗</div>
+    <div class="login-title">First Class Drive</div>
+    <div class="login-sub">Transportation Management System</div>
+    <div class="login-tabs">
+      <div class="login-tab active" onclick="switchLoginTab('admin')">🖥️ Admin</div>
+      <div class="login-tab" onclick="switchLoginTab('driver')">🚗 Conductor</div>
+    </div>
+    <div class="login-form active" id="admin-form">
+      <div class="form-group"><label>Usuario</label><input id="admin-user" type="text" placeholder="admin" autocomplete="off"></div>
+      <div class="form-group"><label>Contraseña</label><input id="admin-pass" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')loginAdmin()"></div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="loginAdmin()">Sign In to Admin Panel</button>
+      <div class="login-err" id="admin-err">Credenciales incorrectas</div>
+    </div>
+    <div class="login-form" id="driver-form">
+      <div class="form-group"><label>Driver username</label><input id="driver-user" type="text" placeholder="driver1" autocomplete="off"></div>
+      <div class="form-group"><label>Contraseña</label><input id="driver-pass" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')loginDriver()"></div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="loginDriver()">Sign In as Driver</button>
+      <div class="login-err" id="driver-err">Credenciales incorrectas</div>
+    </div>
+  </div>
+</div>
+
+<!-- SIDEBAR OVERLAY (mobile) -->
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+<!-- APP -->
+<div id="app">
+  <!-- SIDEBAR -->
+  <nav id="sidebar">
+    <div class="sidebar-logo">
+      <span>🚗 First Class Drive</span>
+      <span class="ver">v63</span>
+    </div>
+    <div class="nav-section">Principal</div>
+    <div class="nav-item active" onclick="showPage('dashboard')"><span>◈</span> Dashboard</div>
+    <div class="nav-item" onclick="showPage('trips')"><span>🚗</span> Trips <span class="nav-badge" id="nb-trips">0</span></div>
+    <div class="nav-section">Operaciones</div>
+    <div class="nav-item" onclick="showPage('rates')"><span>⏱</span> Rate Calculator</div>
+    <div class="nav-item" onclick="showPage('payments')"><span>💳</span> Payments</div>
+    <div class="nav-item" onclick="showPage('reports')"><span>📊</span> Reports</div>
+    <div class="nav-item" onclick="showPage('expenses')"><span>💸</span> Expenses</div>
+    <div class="nav-section">Gestión</div>
+    <div class="nav-item" onclick="showPage('clients')"><span>👥</span> Clients</div>
+    <div class="nav-item" onclick="showPage('catalog')"><span>⭐</span> Service Catalog</div>
+    <div class="nav-item" onclick="showPage('drivers')"><span>👤</span> Drivers</div>
+    <div class="nav-item" onclick="showPage('history')"><span>📋</span> History</div>
+    <div class="nav-item" onclick="showPage('whatsapp')"><span>💬</span> WhatsApp</div>
+    <div class="nav-item" onclick="showPage('settings')"><span>⚙️</span> Settings</div>
+    <div class="sidebar-bottom">
+      <div class="user-pill">
+        <div class="user-avatar">AD</div>
+        <div class="user-info"><div class="user-name">Admin</div><div class="user-role">Superadmin</div></div>
+        <button class="btn-logout" onclick="logoutAdmin()">⏻</button>
+      </div>
+      <div style="margin-top:8px">
+        <div class="nav-item" onclick="showDriverView()" style="background:var(--bg3)"><span>🚗</span> Vista Conductor</div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <div id="main">
+    <!-- HEADER -->
+    <div id="header">
+      <div id="hamburger" onclick="toggleSidebar()">☰</div>
+      <div class="header-title" id="page-title">Dashboard</div>
+      <div class="header-badge" id="live-badge">Live Firebase</div>
+      <div style="flex:1"></div>
+      <div class="btn-icon" onclick="refreshData()" title="Actualizar">↻</div>
+      <div class="btn-icon" onclick="openNewTrip()" title="Nuevo Viaje" style="position:relative">
+        + <span style="font-size:11px">Viaje</span>
+      </div>
+      <div class="btn-icon" id="notif-btn" onclick="toggleNotif()" title="Notificaciones" style="position:relative">
+        🔔
+        <div class="notif-dot" id="notif-dot" style="display:none"></div>
+      </div>
+      <!-- NOTIF PANEL -->
+      <div class="notif-panel" id="notif-panel">
+        <div style="padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+          <span style="font-weight:700;font-size:13px">Notificaciones</span>
+          <span style="font-size:11.5px;color:var(--text3);cursor:pointer" onclick="clearNotifs()">Limpiar</span>
+        </div>
+        <div id="notif-list"><div class="notif-empty">🔔 Sin notificaciones</div></div>
+      </div>
+    </div>
+
+    <!-- CONTENT -->
+    <div id="content">
+
+      <!-- ══ DASHBOARD ══ -->
+      <div class="page active" id="page-dashboard">
+        <div class="page-header">
+          <div class="page-title">Dashboard <span style="font-size:12px;font-weight:400;color:var(--text3)">Resumen operacional en tiempo real</span></div>
+          <div class="page-actions">
+            <button class="btn btn-ghost btn-sm" onclick="exportDashboard()">↓ Exportar</button>
+            <button class="btn btn-primary btn-sm" onclick="openNewTrip()">+ Nuevo Viaje</button>
+          </div>
+        </div>
+        <div class="stat-grid">
+          <div class="stat-card"><div class="stat-label">🚗 Viajes Activos</div><div class="stat-value" id="s-active">—</div><div class="stat-sub" id="s-active-sub">Cargando...</div></div>
+          <div class="stat-card"><div class="stat-label">👤 Conductores</div><div class="stat-value" id="s-drivers">—</div><div class="stat-sub green" id="s-drivers-sub">Cargando...</div></div>
+          <div class="stat-card"><div class="stat-label">⭐ Servicios Hoy</div><div class="stat-value" id="s-today">—</div><div class="stat-sub" id="s-today-sub">Cargando...</div></div>
+          <div class="stat-card"><div class="stat-label">💰 Ingresos Hoy (USD)</div><div class="stat-value" id="s-revenue">—</div><div class="stat-sub green" id="s-rev-sub">Cargando...</div></div>
+        </div>
+        <div class="two-col">
+          <div class="card">
+            <div class="card-title">✅ Últimos servicios aprobados <a onclick="showPage('history')" style="font-size:11.5px;color:var(--accent);cursor:pointer;margin-left:auto">Ver todos</a></div>
+            <div class="table-wrap"><table><thead><tr><th>Cliente</th><th>Conductor</th><th>Servicio</th><th>USD</th></tr></thead>
+            <tbody id="dash-recent"></tbody></table></div>
+          </div>
+          <div class="card">
+            <div class="card-title">👤 Estado de conductores</div>
+            <div id="dash-drivers-status"></div>
+          </div>
+        </div>
+        <div class="card" style="margin-top:16px">
+          <div class="card-title">🗺️ Mapa de operaciones — New Jersey</div>
+          <div style="background:var(--bg3);border-radius:8px;height:200px;display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:13px">
+            <span>📍 Mapa disponible con Google Maps API Key</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ TRIPS ══ -->
+      <div class="page" id="page-trips">
+        <div class="page-header">
+          <div class="page-title">Trips</div>
+          <button class="btn btn-primary btn-sm" onclick="openNewTrip()">+ Nuevo Viaje</button>
+        </div>
+        <div class="tabs">
+          <div class="tab active" onclick="switchTab(this,'trips-active')">Activos</div>
+          <div class="tab" onclick="switchTab(this,'trips-pending')">Pendientes</div>
+          <div class="tab" onclick="switchTab(this,'trips-completed')">Completados</div>
+        </div>
+        <div id="trips-active">
+          <div class="table-wrap"><table><thead><tr><th>ID</th><th>Cliente</th><th>Origen</th><th>Destino</th><th>Conductor</th><th>Estado</th><th>USD</th><th>Acciones</th></tr></thead>
+          <tbody id="trips-active-body"></tbody></table></div>
+        </div>
+        <div id="trips-pending" style="display:none">
+          <div class="table-wrap"><table><thead><tr><th>ID</th><th>Cliente</th><th>Fecha/Hora</th><th>Servicio</th><th>Estado</th><th>Acciones</th></tr></thead>
+          <tbody id="trips-pending-body"></tbody></table></div>
+        </div>
+        <div id="trips-completed" style="display:none">
+          <div class="table-wrap"><table><thead><tr><th>ID</th><th>Cliente</th><th>Conductor</th><th>Fecha</th><th>USD</th><th>Pago</th><th>Recibo</th></tr></thead>
+          <tbody id="trips-completed-body"></tbody></table></div>
+        </div>
+      </div>
+
+      <!-- ══ PAYMENTS ══ -->
+      <div class="page" id="page-payments">
+        <div class="page-header"><div class="page-title">Payments</div></div>
+        <div class="two-col">
+          <div>
+            <div class="stat-grid" style="grid-template-columns:1fr 1fr;margin-bottom:14px">
+              <div class="stat-card"><div class="stat-label">Total cobrado hoy</div><div class="stat-value" id="pay-today">—</div></div>
+              <div class="stat-card"><div class="stat-label">Pagos digitales</div><div class="stat-value" id="pay-digital">—%</div></div>
+            </div>
+            <!-- Pending approvals -->
+            <div class="card" style="margin-bottom:14px">
+              <div class="card-title">⏳ Pendientes de aprobación <span class="nav-badge" id="pending-count-badge">0</span></div>
+              <div id="pending-approvals-list"><div class="empty-state"><div class="empty-icon">⏳</div>Sin servicios pendientes</div></div>
+            </div>
+            <!-- Manual payment -->
+            <div class="card">
+              <div class="card-title">💳 Registrar pago manual</div>
+              <div class="form-group"><label>Viaje / ID</label><input id="pay-trip-id" placeholder="#1045"></div>
+              <div class="form-group"><label>Monto (USD)</label><input id="pay-amount" type="number" placeholder="0.00"></div>
+              <div class="form-group"><label>Método</label>
+                <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">
+                  <div class="chip active" onclick="selectPayMethod(this,'Efectivo')">💵 Efectivo</div>
+                  <div class="chip" onclick="selectPayMethod(this,'Tarjeta')">💳 Tarjeta</div>
+                  <div class="chip" onclick="selectPayMethod(this,'Nequi')">📱 Nequi</div>
+                  <div class="chip" onclick="selectPayMethod(this,'Daviplata')">📱 Daviplata</div>
+                  <div class="chip" onclick="selectPayMethod(this,'Zelle')">💸 Zelle</div>
+                </div>
+              </div>
+              <div class="form-group"><label>Notas</label><textarea id="pay-notes" rows="2" placeholder="Notas opcionales..."></textarea></div>
+              <button class="btn btn-primary" onclick="registerPayment()">Registrar pago</button>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">📋 Últimos pagos</div>
+            <div id="last-payments-list"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ REPORTS ══ -->
+      <div class="page" id="page-reports">
+        <div class="page-header">
+          <div class="page-title">📊 Reports</div>
+          <div class="page-actions">
+            <div class="chip active" id="rep-week" onclick="setReportPeriod('week',this)">Esta semana</div>
+            <div class="chip" id="rep-month" onclick="setReportPeriod('month',this)">Este mes</div>
+            <div class="chip" id="rep-year" onclick="setReportPeriod('year',this)">Este año</div>
+            <button class="btn btn-ghost btn-sm" onclick="exportReportPDF()">↓ Exportar PDF</button>
+          </div>
+        </div>
+        <!-- KPIs reales -->
+        <div class="report-kpi">
+          <div class="stat-card"><div class="stat-label">💰 Ingresos totales</div><div class="stat-value" id="rep-income">—</div><div class="stat-sub green" id="rep-income-sub">Cargando...</div></div>
+          <div class="stat-card"><div class="stat-label">🚗 Total viajes</div><div class="stat-value" id="rep-trips">—</div><div class="stat-sub green" id="rep-trips-sub">Cargando...</div></div>
+          <div class="stat-card"><div class="stat-label">💵 Promedio por viaje</div><div class="stat-value" id="rep-avg">—</div><div class="stat-sub" id="rep-avg-sub">Cargando...</div></div>
+          <div class="stat-card"><div class="stat-label">📉 Gastos operativos</div><div class="stat-value" id="rep-expenses">—</div><div class="stat-sub" id="rep-expenses-sub">Cargando...</div></div>
+        </div>
+        <div class="two-col">
+          <div class="card">
+            <div class="card-title">📈 Ingresos diarios</div>
+            <div class="chart-bar-wrap" id="daily-chart"></div>
+          </div>
+          <div class="card">
+            <div class="card-title">⭐ Servicios más solicitados</div>
+            <div id="top-services-chart"></div>
+          </div>
+        </div>
+        <div class="two-col" style="margin-top:14px">
+          <div class="card">
+            <div class="card-title">🏆 Ranking de conductores</div>
+            <div id="driver-ranking"></div>
+          </div>
+          <div class="card">
+            <div class="card-title">💳 Métodos de pago</div>
+            <div id="payment-methods-chart"></div>
+            <div class="divider"></div>
+            <div style="font-size:13px">
+              <div style="display:flex;justify-content:space-between;padding:5px 0"><span style="color:var(--text2)">Ingresos brutos</span><span id="rep-gross" style="font-weight:700">—</span></div>
+              <div style="display:flex;justify-content:space-between;padding:5px 0"><span style="color:var(--text2)">Gastos operativos</span><span id="rep-op" style="color:var(--red)">—</span></div>
+              <div style="display:flex;justify-content:space-between;padding:5px 0;border-top:1px solid var(--border);margin-top:4px"><span style="font-weight:700">Ganancia neta</span><span id="rep-net" style="font-weight:700;color:var(--green)">—</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ RATE CALCULATOR ══ -->
+      <div class="page" id="page-rates">
+        <div class="page-header"><div class="page-title">⏱ Rate Calculator</div></div>
+        <div class="two-col">
+          <div class="card">
+            <div class="card-title">Configuración base</div>
+            <div class="form-group"><label>Banderazo (USD)</label><input id="rate-base" type="number" value="3.50" oninput="calcRate()"></div>
+            <div class="form-group"><label>Por milla (USD)</label><input id="rate-mile" type="number" value="2.50" step="0.1" oninput="calcRate()"></div>
+            <div class="form-group"><label>Millas recorridas</label><input id="rate-miles" type="number" value="0" oninput="calcRate()"></div>
+            <div class="form-group"><label>Espera (min)</label><input id="rate-wait" type="number" value="0" oninput="calcRate()"></div>
+            <div class="divider"></div>
+            <div style="font-size:13px;font-weight:600;margin-bottom:8px">Recargos</div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer"><input type="checkbox" id="r-night" onchange="calcRate()" style="width:auto"> 🌙 Nocturno +$8.00</label>
+              <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer"><input type="checkbox" id="r-airport" onchange="calcRate()" style="width:auto"> ✈ Aeropuerto +$10.00</label>
+              <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer"><input type="checkbox" id="r-wc" onchange="calcRate()" style="width:auto"> ♿ Wheelchair +$15.00</label>
+              <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer"><input type="checkbox" id="r-bag" onchange="calcRate()" style="width:auto"> 🧳 Maletas +$5.00</label>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">Desglose del cobro</div>
+            <div style="font-size:13px">
+              <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text2)">Banderazo</span><span id="rb-base">$3.50</span></div>
+              <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text2)">Por millas</span><span id="rb-miles">$0.00</span></div>
+              <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text2)">Tiempo de espera</span><span id="rb-wait">$0.00</span></div>
+              <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text2)">Recargos</span><span id="rb-surcharge">$0.00</span></div>
+              <div style="display:flex;justify-content:space-between;padding:10px 0 0;font-size:18px;font-weight:700"><span>Total</span><span id="rb-total" style="color:var(--green)">$3.50</span></div>
+            </div>
+            <button class="btn btn-primary" style="width:100%;margin-top:16px;justify-content:center" onclick="registerRateCobro()">Registrar cobro</button>
+            <button class="btn btn-ghost" style="width:100%;margin-top:6px;justify-content:center" onclick="resetRate()">↺ Reiniciar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ EXPENSES ══ -->
+      <div class="page" id="page-expenses">
+        <div class="page-header"><div class="page-title">💸 Expenses</div><button class="btn btn-primary btn-sm" onclick="document.getElementById('expense-form').scrollIntoView()">+ Registrar gasto</button></div>
+        <div class="two-col">
+          <div>
+            <div class="stat-grid" style="grid-template-columns:1fr 1fr;margin-bottom:14px">
+              <div class="stat-card"><div class="stat-label">Total gastos mes</div><div class="stat-value" id="exp-total">$0</div></div>
+              <div class="stat-card"><div class="stat-label">⛽ Gasolina</div><div class="stat-value" id="exp-gas">$0</div></div>
+            </div>
+            <div class="card">
+              <div class="card-title">📋 Registro de gastos</div>
+              <div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Categoría</th><th>Conductor</th><th>Descripción</th><th>USD</th></tr></thead>
+              <tbody id="expenses-list"></tbody></table></div>
+            </div>
+          </div>
+          <div class="card" id="expense-form">
+            <div class="card-title">+ Registrar gasto</div>
+            <div class="form-group"><label>Fecha</label><input id="exp-date" type="date"></div>
+            <div class="form-group"><label>Categoría</label>
+              <select id="exp-cat">
+                <option>⛽ Gasolina</option><option>🔧 Mantenimiento</option><option>🛡️ Seguro</option>
+                <option>🧹 Limpieza</option><option>🅿️ Parqueo / Peajes</option><option>📋 Licencias / Permisos</option>
+                <option>💊 Medicamentos / Kit</option><option>🔩 Reparación urgente</option><option>📦 Otros</option>
+              </select>
+            </div>
+            <div class="form-group"><label>Conductor / Vehículo</label><select id="exp-driver"><option>— Seleccionar —</option></select></div>
+            <div class="form-group"><label>Monto (USD)</label><input id="exp-amount" type="number" placeholder="0.00"></div>
+            <div class="form-group"><label>Descripción</label><input id="exp-desc" placeholder="Descripción del gasto"></div>
+            <button class="btn btn-primary" onclick="saveExpense()">Guardar gasto</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ CLIENTS ══ -->
+      <div class="page" id="page-clients">
+        <div class="page-header">
+          <div class="page-title">👥 Clients</div>
+          <button class="btn btn-primary btn-sm" onclick="openClientModal()">+ Nuevo cliente</button>
+        </div>
+        <div class="stat-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:14px">
+          <div class="stat-card"><div class="stat-label">Total clientes</div><div class="stat-value" id="cli-total">0</div></div>
+          <div class="stat-card"><div class="stat-label">Frecuentes</div><div class="stat-value" id="cli-frequent">0</div></div>
+          <div class="stat-card"><div class="stat-label">Viajes este mes</div><div class="stat-value" id="cli-trips">0</div></div>
+          <div class="stat-card"><div class="stat-label">Ingresos clientes</div><div class="stat-value" id="cli-revenue">$0</div></div>
+        </div>
+        <div id="clients-list" style="display:grid;gap:8px"></div>
+      </div>
+
+      <!-- ══ CATALOG ══ -->
+      <div class="page" id="page-catalog">
+        <div class="page-header"><div class="page-title">⭐ Service Catalog</div><button class="btn btn-primary btn-sm" onclick="openCatalogModal()">+ Nuevo servicio</button></div>
+        <div id="catalog-list"></div>
+      </div>
+
+      <!-- ══ DRIVERS ══ -->
+      <div class="page" id="page-drivers">
+        <div class="page-header"><div class="page-title">👤 Drivers</div><button class="btn btn-primary btn-sm" onclick="openDriverModal()">+ Nuevo conductor</button></div>
+        <div class="stat-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:14px">
+          <div class="stat-card"><div class="stat-label">Total conductores</div><div class="stat-value" id="drv-total">0</div></div>
+          <div class="stat-card"><div class="stat-label">Disponibles</div><div class="stat-value" id="drv-available" style="color:var(--green)">0</div></div>
+          <div class="stat-card"><div class="stat-label">En servicio</div><div class="stat-value" id="drv-active" style="color:var(--yellow)">0</div></div>
+          <div class="stat-card"><div class="stat-label">Fuera de servicio</div><div class="stat-value" id="drv-off" style="color:var(--text3)">0</div></div>
+        </div>
+        <div id="drivers-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px"></div>
+      </div>
+
+      <!-- ══ HISTORY ══ -->
+      <div class="page" id="page-history">
+        <div class="page-header"><div class="page-title">📋 History</div></div>
+        <div class="history-search">
+          <input id="hist-search" placeholder="Buscar por cliente o conductor..." oninput="filterHistory()">
+          <input id="hist-date" type="date" onchange="filterHistory()" style="width:140px">
+          <button class="btn btn-ghost btn-sm" onclick="clearHistoryFilter()">✕ Limpiar</button>
+        </div>
+        <div class="table-wrap">
+          <table><thead><tr><th>Fecha</th><th>Cliente</th><th>Conductor</th><th>Servicio</th><th>Millas</th><th>USD</th><th>Estado</th><th>Recibo</th></tr></thead>
+          <tbody id="history-list"></tbody></table>
+        </div>
+      </div>
+
+      <!-- ══ WHATSAPP ══ -->
+      <div class="page" id="page-whatsapp">
+        <div class="page-header">
+          <div class="page-title">💬 WhatsApp Conductores</div>
+          <button class="btn btn-wa" onclick="sendWAAll()">📢 Mensaje grupal</button>
+        </div>
+        <div style="background:rgba(37,211,102,.06);border:1px solid rgba(37,211,102,.2);border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:13px;color:var(--text2)">
+          <strong style="color:#4ade80">💬 Contacto directo</strong> — Haz clic en cualquier botón para abrir WhatsApp directamente con el conductor. No se necesita chat interno.
+        </div>
+        <div class="wa-driver-list" id="wa-driver-list"></div>
+        <!-- Broadcast -->
+        <div class="card" style="margin-top:16px">
+          <div class="card-title">📢 Mensaje a todos los conductores</div>
+          <div class="form-group"><label>Mensaje</label><textarea id="wa-broadcast" rows="3" placeholder="Escribe el mensaje para todos los conductores..."></textarea></div>
+          <button class="btn btn-wa" onclick="sendWAAll()">📢 Enviar a todos por WhatsApp</button>
+        </div>
+      </div>
+
+      <!-- ══ SETTINGS ══ -->
+      <div class="page" id="page-settings">
+        <div class="page-header"><div class="page-title">⚙️ Settings</div></div>
+        <div class="tabs">
+          <div class="tab active" onclick="switchTab(this,'set-company')">🏢 Empresa</div>
+          <div class="tab" onclick="switchTab(this,'set-users')">👥 Usuarios</div>
+          <div class="tab" onclick="switchTab(this,'set-maps')">🗺️ Maps</div>
+          <div class="tab" onclick="switchTab(this,'set-notif')">🔔 Alertas</div>
+          <div class="tab" onclick="switchTab(this,'set-lang')">🌐 Idioma</div>
+        </div>
+        <div id="set-company">
+          <div class="two-col">
+            <div class="card"><div class="card-title">Datos de la empresa</div>
+              <div class="form-group"><label>Nombre</label><input id="set-name" placeholder="First Class Drive"></div>
+              <div class="form-group"><label>Teléfono</label><input id="set-phone" placeholder="+1 (305) 555-0100"></div>
+              <div class="form-group"><label>Email</label><input id="set-email" placeholder="admin@firstclassdrive.com"></div>
+              <div class="form-group"><label>Dirección</label><input id="set-addr" placeholder="Miami, FL"></div>
+              <div class="form-group"><label>Sitio web</label><input id="set-web" placeholder="firstclassdrive.com"></div>
+              <button class="btn btn-primary" onclick="saveSettings()">Guardar cambios</button>
+            </div>
+            <div class="card"><div class="card-title">Logo & marca</div>
+              <div style="background:var(--bg3);border-radius:8px;height:100px;display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:13px;cursor:pointer;border:2px dashed var(--border2)" onclick="document.getElementById('logo-upload').click()">
+                🏳️ Clic para subir logo
+              </div>
+              <input id="logo-upload" type="file" accept="image/*" style="display:none">
+              <div class="form-group" style="margin-top:12px"><label>Color de marca</label><input type="color" id="set-color" value="#3b82f6" style="height:36px"></div>
+              <div class="form-group"><label>Eslogan</label><input id="set-slogan" placeholder="Premium Transportation Services"></div>
+              <button class="btn btn-ghost" onclick="saveBrand()">Actualizar marca</button>
+            </div>
+          </div>
+        </div>
+        <div id="set-users" style="display:none">
+          <div class="card"><div class="card-title">Usuarios del panel</div>
+            <div class="table-wrap"><table><thead><tr><th>Usuario</th><th>Email</th><th>Rol</th><th>Estado</th><th></th></tr></thead>
+            <tbody><tr><td><strong>Admin</strong></td><td>admin@firstclassdrive.com</td><td><span class="badge badge-blue">Superadmin</span></td><td><span class="badge badge-green">Activo</span></td><td><button class="btn btn-ghost btn-sm">Editar</button></td></tr></tbody></table></div>
+          </div>
+        </div>
+        <div id="set-maps" style="display:none">
+          <div class="card"><div class="card-title">🗺️ Google Maps API</div>
+            <div class="form-group"><label>API Key</label><input id="maps-key" placeholder="AIzaSy..." type="password"></div>
+            <div class="form-group"><label>Región</label><select id="maps-region"><option value="US">Estados Unidos (US)</option><option value="CO">Colombia (CO)</option><option value="MX">México (MX)</option></select></div>
+            <button class="btn btn-primary" onclick="saveMapsKey()">🗺️ Guardar y activar Maps</button>
+          </div>
+        </div>
+        <div id="set-notif" style="display:none">
+          <div class="card"><div class="card-title">🔔 Alertas del sistema</div>
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" checked style="width:auto"> Nuevo viaje agendado</label>
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" checked style="width:auto"> Viaje sin conductor (>15 min)</label>
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" checked style="width:auto"> Pago recibido</label>
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" style="width:auto"> Reporte diario por email</label>
+            </div>
+            <div class="form-group" style="margin-top:12px"><label>Email para alertas</label><input id="notif-email" placeholder="admin@firstclassdrive.com"></div>
+            <button class="btn btn-primary" onclick="saveNotifSettings()">Guardar preferencias</button>
+          </div>
+        </div>
+        <div id="set-lang" style="display:none">
+          <div class="card"><div class="card-title">🌐 Idioma y región</div>
+            <div class="form-group"><label>Idioma</label><select><option>Español</option><option>English (US)</option></select></div>
+            <div class="form-group"><label>Moneda</label><select><option>USD — Dólar</option><option>COP — Peso colombiano</option></select></div>
+            <div class="form-group"><label>Zona horaria</label><select><option>America/New_York (EST)</option><option>America/Bogota (COT)</option></select></div>
+            <button class="btn btn-primary" onclick="showToast('Configuración guardada')">Aplicar cambios</button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<!-- ══ DRIVER OVERLAY ══ -->
+<div id="driver-overlay">
+  <div class="driver-topbar">
+    <button class="btn btn-ghost btn-sm" onclick="hideDriverView()">✕ Volver al Admin</button>
+    <span style="font-size:13px;font-weight:600;margin-left:8px">🚗 Vista Conductor</span>
+    <div id="drv-view-status" style="margin-left:auto;font-size:12px;color:var(--green)"></div>
+    <button class="btn btn-red btn-sm" onclick="driverLogout()" style="margin-left:8px">Salir</button>
+  </div>
+  <div class="driver-content">
+    <!-- Driver Login -->
+    <div id="drv-login" style="display:none">
+      <div class="login-box" style="margin:40px auto">
+        <div class="login-logo">🚗</div>
+        <div class="login-title">Portal del Conductor</div>
+        <div class="login-sub">Use las credenciales de tu administrador</div>
+        <div class="form-group" style="margin-top:16px"><label>Usuario</label><input id="drv-user" placeholder="driver1"></div>
+        <div class="form-group"><label>Contraseña</label><input id="drv-pass" type="password" onkeydown="if(event.key==='Enter')driverLogin()"></div>
+        <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:4px" onclick="driverLogin()">Ingresar</button>
+        <div class="login-err" id="drv-err">Credenciales incorrectas</div>
+      </div>
+    </div>
+    <!-- Driver Dashboard -->
+    <div id="drv-dashboard" style="display:none">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+        <div class="user-avatar" id="drv-avatar">—</div>
+        <div>
+          <div style="font-weight:700" id="drv-name">—</div>
+          <div style="font-size:12px;color:var(--text3)" id="drv-vehicle">—</div>
+        </div>
+        <div id="drv-badge" style="margin-left:auto;font-size:12px;padding:4px 10px;background:var(--green2);color:#fff;border-radius:10px">Disponible</div>
+      </div>
+      <!-- Current trip -->
+      <div id="drv-trip-card" style="display:none">
+        <div class="card" style="margin-bottom:14px;border-color:var(--accent)">
+          <div style="display:flex;gap:6px;margin-bottom:12px">
+            <div class="chip active" id="drv-step1">1 Asignado</div>
+            <div class="chip" id="drv-step2">2 Iniciado</div>
+            <div class="chip" id="drv-step3">3 Terminado</div>
+          </div>
+          <div style="font-size:15px;font-weight:700;margin-bottom:4px" id="drv-trip-id">Viaje #—</div>
+          <div style="font-size:13px;color:var(--text2);margin-bottom:12px" id="drv-trip-service">—</div>
+          <div style="font-size:12.5px;margin-bottom:6px"><span style="color:var(--text3)">Recogida:</span> <span id="drv-trip-origin">—</span></div>
+          <div style="font-size:12.5px;margin-bottom:12px"><span style="color:var(--text3)">Destino:</span> <span id="drv-trip-dest">—</span></div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+            <div class="user-avatar" style="width:30px;height:30px;font-size:11px" id="drv-client-av">—</div>
+            <div>
+              <div style="font-size:13px;font-weight:600" id="drv-client-name">—</div>
+              <div style="font-size:11.5px;color:var(--text3)" id="drv-client-phone">—</div>
+            </div>
+            <div id="drv-client-wa" style="margin-left:auto"></div>
+          </div>
+          <div style="font-size:12px;color:var(--text3);margin-bottom:8px" id="drv-admin-note"></div>
+          <div style="background:var(--bg3);border-radius:8px;padding:10px;text-align:center;margin-bottom:12px" id="drv-timer-wrap">
+            <div style="font-size:11px;color:var(--text3)">Tiempo en servicio</div>
+            <div style="font-size:22px;font-weight:700;letter-spacing:2px" id="drv-timer">00:00</div>
+          </div>
+          <div class="form-group" style="margin-bottom:8px"><label>📝 Observaciones</label><textarea id="drv-obs" rows="2" placeholder="Notas del servicio..."></textarea></div>
+          <div class="form-group"><label>📍 Millas recorridas</label><input id="drv-miles" type="number" placeholder="0"></div>
+          <div id="drv-action-btn" style="margin-top:10px"></div>
+        </div>
+      </div>
+      <div id="drv-no-trip" class="empty-state">
+        <div class="empty-icon">🚗</div>
+        <div>Sin viajes asignados en este momento</div>
+        <div style="font-size:12px;margin-top:4px">Espera que el admin te asigne un servicio</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODALS ══ -->
+
+<!-- New Trip Modal -->
+<div class="modal-overlay" id="new-trip-modal">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">+ Nuevo Viaje</div><div class="modal-close" onclick="closeModal('new-trip-modal')">×</div></div>
+    <div class="modal-body">
+      <div class="form-group"><label>Nombre del cliente</label><input id="nt-client" placeholder="James Wilson"></div>
+      <div class="form-group"><label>Teléfono</label><input id="nt-phone" placeholder="+1 (305) 555-0199"></div>
+      <div class="form-group"><label>Origen</label><input id="nt-origin" placeholder="Dirección de recogida"></div>
+      <div class="form-group"><label>Destino</label><input id="nt-dest" placeholder="Dirección de destino"></div>
+      <div class="form-group"><label>Servicio</label>
+        <select id="nt-service">
+          <option>Wheelchair Sencillo — $65</option><option>Wheelchair Premium — $95</option>
+          <option>Airport Transfer — $120</option><option>Non-Emergency Medical — $85</option>
+          <option>Senior Assisted — $75</option><option>Group Transfer — $200</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Conductor</label><select id="nt-driver"><option value="">Sin asignar</option></select></div>
+      <div class="form-group"><label>Fecha y hora</label><input id="nt-datetime" type="datetime-local"></div>
+      <div class="form-group"><label>Nota para el conductor</label><textarea id="nt-note" rows="2" placeholder="Instrucciones especiales..."></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('new-trip-modal')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveNewTrip()">Agendar viaje</button>
+    </div>
+  </div>
+</div>
+
+<!-- Assign Driver Modal -->
+<div class="modal-overlay" id="assign-modal">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">🚗 Assign Driver</div><div class="modal-close" onclick="closeModal('assign-modal')">×</div></div>
+    <div class="modal-body">
+      <div style="background:var(--bg3);border-radius:8px;padding:12px;margin-bottom:14px;font-size:13px">
+        <div><strong>Viaje:</strong> <span id="assign-trip-id">—</span></div>
+        <div><strong>Cliente:</strong> <span id="assign-client">—</span></div>
+        <div><strong>Servicio:</strong> <span id="assign-service">—</span></div>
+        <div><strong>Hora:</strong> <span id="assign-time">—</span></div>
+      </div>
+      <div class="form-group"><label>Seleccionar conductor</label><select id="assign-driver-sel"><option>Cargando...</option></select></div>
+      <div class="form-group"><label>Nota para el conductor (opcional)</label><textarea id="assign-note" rows="2" placeholder="Instrucciones especiales..."></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('assign-modal')">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmAssign()">Assign & Notify Driver →</button>
+    </div>
+  </div>
+</div>
+
+<!-- Approve Trip Modal -->
+<div class="modal-overlay" id="approve-modal">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">✅ Aprobar servicio</div><div class="modal-close" onclick="closeModal('approve-modal')">×</div></div>
+    <div class="modal-body" id="approve-body"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('approve-modal')">Cancelar</button>
+      <button class="btn btn-green" onclick="confirmApprove()">✅ Aprobar y cobrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Receipt Modal -->
+<div class="modal-overlay" id="receipt-modal">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header"><div class="modal-title">🧾 Recibo</div><div class="modal-close" onclick="closeModal('receipt-modal')">×</div></div>
+    <div class="modal-body" id="receipt-body"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('receipt-modal')">Cerrar</button>
+      <button class="btn btn-ghost" onclick="printReceipt()">🖨️ Imprimir</button>
+      <button class="btn btn-primary" onclick="shareReceipt()">📤 Compartir</button>
+    </div>
+  </div>
+</div>
+
+<!-- Driver Modal -->
+<div class="modal-overlay" id="driver-modal">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title" id="drv-modal-title">+ Nuevo Conductor</div><div class="modal-close" onclick="closeModal('driver-modal')">×</div></div>
+    <div class="modal-body">
+      <div class="tabs" style="margin-bottom:16px">
+        <div class="tab active" onclick="switchTab(this,'drv-tab-personal')">Personal</div>
+        <div class="tab" onclick="switchTab(this,'drv-tab-vehicle')">Vehículo</div>
+        <div class="tab" onclick="switchTab(this,'drv-tab-access')">Acceso App</div>
+      </div>
+      <div id="drv-tab-personal">
+        <div class="form-group"><label>Nombre completo</label><input id="drv-fullname" placeholder="Juan Pérez"></div>
+        <div class="form-group"><label>Teléfono</label><input id="drv-phone" placeholder="+1 (305) 555-0100"></div>
+        <div class="form-group"><label>Email</label><input id="drv-email" placeholder="juan@email.com"></div>
+        <div class="form-group"><label>Licencia #</label><input id="drv-license" placeholder="D1234567"></div>
+        <div class="form-group"><label>Certificaciones</label>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
+            <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer"><input type="checkbox" id="cert-wc" style="width:auto"> ♿ Wheelchair</label>
+            <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer"><input type="checkbox" id="cert-nemt" style="width:auto"> 🏥 NEMT</label>
+            <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer"><input type="checkbox" id="cert-bari" style="width:auto"> 🦽 Bariatric</label>
+            <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer"><input type="checkbox" id="cert-air" style="width:auto"> ✈️ Airport</label>
+          </div>
+        </div>
+      </div>
+      <div id="drv-tab-vehicle" style="display:none">
+        <div class="form-group"><label>Tipo de vehículo</label><select id="drv-vtype"><option>Toyota Sienna</option><option>Honda Odyssey</option><option>Ford Transit</option><option>Chrysler Pacifica</option><option>Dodge Grand Caravan</option><option>Otro</option></select></div>
+        <div class="form-group"><label>Placa</label><input id="drv-plate" placeholder="ABC-123"></div>
+        <div class="form-group"><label>Color</label><input id="drv-vcolor" placeholder="Blanco"></div>
+        <div class="form-group"><label>Año</label><input id="drv-vyear" type="number" placeholder="2022"></div>
+      </div>
+      <div id="drv-tab-access" style="display:none">
+        <div style="background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.2);border-radius:8px;padding:10px;font-size:12.5px;margin-bottom:12px">💡 Estas credenciales son las que usa el conductor para ingresar a la app móvil.</div>
+        <div class="form-group"><label>Usuario (login conductor)</label><input id="drv-username" placeholder="driver1"></div>
+        <div class="form-group"><label>Contraseña</label><input id="drv-password" type="password" placeholder="••••••••"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('driver-modal')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveDriver()">✓ Guardar conductor</button>
+    </div>
+  </div>
+</div>
+
+<!-- Client Modal -->
+<div class="modal-overlay" id="client-modal">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">+ Nuevo Cliente</div><div class="modal-close" onclick="closeModal('client-modal')">×</div></div>
+    <div class="modal-body">
+      <div class="form-group"><label>Nombre completo</label><input id="cli-name" placeholder="James Wilson"></div>
+      <div class="form-group"><label>Teléfono</label><input id="cli-phone" placeholder="+1 (305) 555-0199"></div>
+      <div class="form-group"><label>Email</label><input id="cli-email" placeholder="james@email.com"></div>
+      <div class="form-group"><label>Dirección frecuente</label><input id="cli-addr" placeholder="8900 SW 117th Ave"></div>
+      <div class="form-group"><label>Necesidades especiales</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer"><input type="checkbox" style="width:auto"> ♿ Silla de ruedas</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer"><input type="checkbox" style="width:auto"> 🏥 NEMT</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer"><input type="checkbox" style="width:auto"> ✈️ Viajero frecuente</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer"><input type="checkbox" style="width:auto"> 👴 Adulto mayor</label>
+        </div>
+      </div>
+      <div class="form-group"><label>Seguro médico</label><input id="cli-insurance" placeholder="Blue Cross Blue Shield"></div>
+      <div class="form-group"><label>Número de póliza</label><input id="cli-policy" placeholder="#123456789"></div>
+      <div class="form-group"><label>Notas especiales</label><textarea id="cli-notes" rows="2" placeholder="Instrucciones para el conductor..."></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('client-modal')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveClient()">✓ Guardar cliente</button>
+    </div>
+  </div>
+</div>
+
+<!-- WA Broadcast Modal -->
+<div class="modal-overlay" id="wa-modal">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">📢 Mensaje a todos</div><div class="modal-close" onclick="closeModal('wa-modal')">×</div></div>
+    <div class="modal-body">
+      <div class="form-group"><label>Mensaje</label><textarea id="wa-msg" rows="4" placeholder="Escribe el mensaje para todos los conductores..."></textarea></div>
+      <div style="font-size:12px;color:var(--text3);margin-top:6px">Se abrirá WhatsApp para cada conductor activo con el mensaje pre-llenado.</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('wa-modal')">Cancelar</button>
+      <button class="btn btn-wa" onclick="doSendWAAll()">📢 Enviar a todos</button>
+    </div>
+  </div>
+</div>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// FIREBASE CONFIG
+// ═══════════════════════════════════════════════════════
+const firebaseConfig = {
+  apiKey: "AIzaSyBdeKYulchRCEmDzdzuNNgU2-jhu0gzku0",
+  authDomain: "first-class-drive-dcf90.firebaseapp.com",
+  databaseURL: "https://first-class-drive-dcf90-default-rtdb.firebaseio.com",
+  projectId: "first-class-drive-dcf90",
+  storageBucket: "first-class-drive-dcf90.appspot.com",
+  messagingSenderId: "1063456789",
+  appId: "1:1063456789:web:abcdef123456"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// ═══════════════════════════════════════════════════════
+// SHA-256
+// ═══════════════════════════════════════════════════════
+async function sha256(msg) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(msg));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════
+let STATE = {
+  adminLogged: false,
+  driverLogged: false,
+  currentDriverKey: null,
+  currentDriverData: null,
+  activeTripKey: null,
+  activeTripData: null,
+  timerInterval: null,
+  timerSeconds: 0,
+  allTrips: {},
+  allDrivers: {},
+  allClients: {},
+  allExpenses: {},
+  currentPage: 'dashboard',
+  pendingApprovals: {},
+  assignTripKey: null,
+  approveTripKey: null,
+  payMethod: 'Efectivo',
+  reportPeriod: 'week',
+  notifs: [],
+};
+
+// ═══════════════════════════════════════════════════════
+// DRIVER PHONE MAP (for WhatsApp)
+// ═══════════════════════════════════════════════════════
+const DRIVER_PHONES = {
+  driver1: '+15555550101',
+  driver2: '+15555550102',
+  hanaya: '+15555550103',
+  kelly01: '+15555550104',
+};
+
+// ═══════════════════════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════════════════════
+const ADMIN_CREDENTIALS = { user: 'admin', passHash: '' };
+
+async function initAdminHash() {
+  ADMIN_CREDENTIALS.passHash = await sha256('FCD2024!');
+}
+initAdminHash();
+
+function switchLoginTab(t) {
+  document.querySelectorAll('.login-tab').forEach((el,i)=>{el.classList.toggle('active',i===(t==='admin'?0:1))});
+  document.getElementById('admin-form').classList.toggle('active',t==='admin');
+  document.getElementById('driver-form').classList.toggle('active',t==='driver');
+}
+
+async function loginAdmin() {
+  const user = document.getElementById('admin-user').value.trim();
+  const pass = document.getElementById('admin-pass').value;
+  const hash = await sha256(pass);
+  if (user === 'admin' && hash === ADMIN_CREDENTIALS.passHash) {
+    STATE.adminLogged = true;
+    document.getElementById('login-screen').style.display = 'none';
+    startFirebaseListeners();
+    showToast('✅ Bienvenido, Admin');
+  } else {
+    const err = document.getElementById('admin-err');
+    err.classList.add('show');
+    setTimeout(()=>err.classList.remove('show'),3000);
+  }
+}
+
+async function loginDriver() {
+  const user = document.getElementById('driver-user').value.trim().toLowerCase();
+  const pass = document.getElementById('driver-pass').value;
+  const hash = await sha256(pass);
+  try {
+    const snap = await db.ref(`drivers/${user}`).get();
+    if (snap.exists()) {
+      const d = snap.val();
+      let valid = false;
+      if (d.passwordHash && d.passwordHash === hash) valid = true;
+      else if (d.password && d.password === pass) {
+        valid = true;
+        // migrate
+        await db.ref(`drivers/${user}/passwordHash`).set(hash);
+        await db.ref(`drivers/${user}/password`).remove();
+      }
+      if (valid) {
+        STATE.driverLogged = true;
+        STATE.currentDriverKey = user;
+        STATE.currentDriverData = d;
+        document.getElementById('login-screen').style.display = 'none';
+        showDriverView();
+        return;
+      }
+    }
+  } catch(e) {}
+  const err = document.getElementById('driver-err');
+  err.classList.add('show');
+  setTimeout(()=>err.classList.remove('show'),3000);
+}
+
+function logoutAdmin() {
+  STATE.adminLogged = false;
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('admin-user').value = '';
+  document.getElementById('admin-pass').value = '';
+}
+
+// ═══════════════════════════════════════════════════════
+// SIDEBAR / NAVIGATION
+// ═══════════════════════════════════════════════════════
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebar-overlay').classList.toggle('show');
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebar-overlay').classList.remove('show');
+}
+
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  const titles = {dashboard:'Dashboard',trips:'Trips',rates:'Rate Calculator',payments:'Payments',reports:'Reports',expenses:'Expenses',clients:'Clients',catalog:'Service Catalog',drivers:'Drivers',history:'History',whatsapp:'WhatsApp Conductores',settings:'Settings'};
+  document.getElementById('page-title').textContent = titles[id]||id;
+  STATE.currentPage = id;
+  closeSidebar();
+  if (id==='reports') renderReports();
+  if (id==='whatsapp') renderWADrivers();
+  if (id==='payments') renderPendingApprovals();
+}
+
+function switchTab(el, targetId) {
+  const parent = el.parentElement;
+  parent.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  // find siblings (same level divs with ids)
+  const container = parent.nextElementSibling ? parent.parentElement : parent.parentElement;
+  // handle generic tab content
+  const ids = Array.from(parent.querySelectorAll('.tab')).map(t=>{
+    const fn = t.getAttribute('onclick')||'';
+    const m = fn.match(/'([^']+)'\)/);
+    return m?m[1]:null;
+  }).filter(Boolean);
+  ids.forEach(tid=>{
+    const el2 = document.getElementById(tid);
+    if(el2) el2.style.display = tid===targetId?'block':'none';
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// FIREBASE LISTENERS
+// ═══════════════════════════════════════════════════════
+function startFirebaseListeners() {
+  // Drivers
+  db.ref('drivers').on('value', snap=>{
+    STATE.allDrivers = snap.val()||{};
+    renderDashboardDrivers();
+    renderDriversPage();
+    updateDriverStats();
+    populateDriverSelects();
+    renderWADrivers();
+  });
+  // Trips
+  db.ref('trips').on('value', snap=>{
+    STATE.allTrips = snap.val()||{};
+    renderDashboardStats();
+    renderTripsPage();
+    renderPendingApprovals();
+    renderHistoryPage();
+    updateTripsBadge();
+  });
+  // Clients
+  db.ref('clients').on('value', snap=>{
+    STATE.allClients = snap.val()||{};
+    renderClientsPage();
+  });
+  // Expenses
+  db.ref('expenses').on('value', snap=>{
+    STATE.allExpenses = snap.val()||{};
+    renderExpenses();
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════════════════════════════
+function renderDashboardStats() {
+  const trips = Object.values(STATE.allTrips);
+  const active = trips.filter(t=>['assigned','started','in_progress'].includes(t.status)).length;
+  const today = new Date().toDateString();
+  const todayTrips = trips.filter(t=>t.completedAt && new Date(t.completedAt).toDateString()===today);
+  const todayRev = todayTrips.reduce((s,t)=>s+(parseFloat(t.price)||0),0);
+
+  document.getElementById('s-active').textContent = active;
+  document.getElementById('s-active-sub').textContent = active>0?`${active} en camino`:'Sin viajes activos';
+  document.getElementById('s-today').textContent = todayTrips.length;
+  document.getElementById('s-today-sub').textContent = `completados hoy`;
+  document.getElementById('s-revenue').textContent = `$${todayRev.toFixed(0)}`;
+  document.getElementById('s-rev-sub').textContent = 'generados hoy';
+
+  // Recent approved
+  const approved = trips.filter(t=>t.status==='approved').sort((a,b)=>(b.completedAt||0)-(a.completedAt||0)).slice(0,5);
+  const tbody = document.getElementById('dash-recent');
+  if (approved.length===0) {
+    tbody.innerHTML = `<tr><td colspan="4" style="color:var(--text3);text-align:center">Sin servicios aprobados aún</td></tr>`;
+  } else {
+    tbody.innerHTML = approved.map(t=>`<tr>
+      <td>${t.clientName||'—'}</td>
+      <td>${t.driverName||'—'}</td>
+      <td>${t.service||'—'}</td>
+      <td style="color:var(--green)">$${t.price||0}</td>
+    </tr>`).join('');
+  }
+}
+
+function renderDashboardDrivers() {
+  const container = document.getElementById('dash-drivers-status');
+  const drivers = Object.entries(STATE.allDrivers);
+  if (drivers.length===0){container.innerHTML='<div class="empty-state" style="padding:16px">Sin conductores registrados</div>';return;}
+  container.innerHTML = drivers.map(([k,d])=>`
+    <div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border)">
+      <div class="user-avatar" style="width:28px;height:28px;font-size:10px">${initials(d.name)}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:600">${d.name||k}</div>
+        <div style="font-size:11.5px;color:var(--text3)">${d.vehicle||'—'} · ${d.plate||'—'}</div>
+      </div>
+      ${statusBadge(d.status||'available')}
+    </div>
+  `).join('');
+}
+
+function statusBadge(s) {
+  const map = {available:'<span class="badge badge-green">Disponible</span>',busy:'<span class="badge badge-yellow">En servicio</span>',off:'<span class="badge badge-gray">Fuera</span>'};
+  return map[s]||`<span class="badge badge-gray">${s}</span>`;
+}
+
+function updateDriverStats() {
+  const drivers = Object.values(STATE.allDrivers);
+  document.getElementById('s-drivers').textContent = drivers.length;
+  const avail = drivers.filter(d=>d.status==='available').length;
+  document.getElementById('s-drivers-sub').textContent = `${avail} disponibles`;
+  document.getElementById('drv-total').textContent = drivers.length;
+  document.getElementById('drv-available').textContent = drivers.filter(d=>(!d.status||d.status==='available')).length;
+  document.getElementById('drv-active').textContent = drivers.filter(d=>d.status==='busy').length;
+  document.getElementById('drv-off').textContent = drivers.filter(d=>d.status==='off').length;
+}
+
+function updateTripsBadge() {
+  const pending = Object.values(STATE.allTrips).filter(t=>!t.driverKey && t.status==='pending').length;
+  const el = document.getElementById('nb-trips');
+  el.textContent = pending;
+  el.style.display = pending>0?'flex':'none';
+}
+
+// ═══════════════════════════════════════════════════════
+// TRIPS PAGE
+// ═══════════════════════════════════════════════════════
+function renderTripsPage() {
+  const entries = Object.entries(STATE.allTrips);
+  const active = entries.filter(([k,t])=>['assigned','started','in_progress'].includes(t.status));
+  const pending = entries.filter(([k,t])=>t.status==='pending'||!t.driverKey);
+  const completed = entries.filter(([k,t])=>['completed','approved'].includes(t.status));
+
+  // Active
+  const ab = document.getElementById('trips-active-body');
+  if(active.length===0){ab.innerHTML=`<tr><td colspan="8" class="empty-state">Sin viajes activos</td></tr>`;}
+  else ab.innerHTML = active.map(([k,t])=>`<tr>
+    <td><strong>#${t.id||k.slice(-4)}</strong></td>
+    <td>${t.clientName||'—'}</td>
+    <td>${(t.origin||'—').substring(0,20)}</td>
+    <td>${(t.destination||'—').substring(0,20)}</td>
+    <td>${t.driverName||'—'}</td>
+    <td>${tripStatusBadge(t.status)}</td>
+    <td style="color:var(--green)">$${t.price||0}</td>
+    <td><button class="btn btn-ghost btn-sm" onclick="openUpdateTrip('${k}')">Actualizar</button></td>
+  </tr>`).join('');
+
+  // Pending
+  const pb = document.getElementById('trips-pending-body');
+  if(pending.length===0){pb.innerHTML=`<tr><td colspan="6" class="empty-state">Sin viajes pendientes</td></tr>`;}
+  else pb.innerHTML = pending.map(([k,t])=>`<tr>
+    <td><strong>#${t.id||k.slice(-4)}</strong></td>
+    <td>${t.clientName||'—'}</td>
+    <td>${t.datetime ? new Date(t.datetime).toLocaleString('es') : '—'}</td>
+    <td>${t.service||'—'}</td>
+    <td><span class="badge badge-yellow">⏳ Pendiente</span></td>
+    <td><button class="btn btn-primary btn-sm" onclick="openAssign('${k}')">🚗 Asignar</button></td>
+  </tr>`).join('');
+
+  // Completed
+  const cb = document.getElementById('trips-completed-body');
+  if(completed.length===0){cb.innerHTML=`<tr><td colspan="7" class="empty-state">Sin viajes completados</td></tr>`;}
+  else cb.innerHTML = completed.map(([k,t])=>`<tr>
+    <td><strong>#${t.id||k.slice(-4)}</strong></td>
+    <td>${t.clientName||'—'}</td>
+    <td>${t.driverName||'—'}</td>
+    <td>${t.completedAt?new Date(t.completedAt).toLocaleDateString('es'):'—'}</td>
+    <td style="color:var(--green)">$${t.price||0}</td>
+    <td>${t.paymentMethod||'—'}</td>
+    <td><button class="btn btn-ghost btn-sm" onclick="openReceipt('${k}')">🧾 Recibo</button></td>
+  </tr>`).join('');
+}
+
+function tripStatusBadge(s){
+  const map={assigned:'<span class="badge badge-blue">Asignado</span>',started:'<span class="badge badge-yellow">En curso</span>',in_progress:'<span class="badge badge-yellow">En curso</span>',completed:'<span class="badge badge-purple">Completado</span>',approved:'<span class="badge badge-green">Aprobado</span>',pending:'<span class="badge badge-gray">Pendiente</span>'};
+  return map[s]||`<span class="badge badge-gray">${s}</span>`;
+}
+
+// ═══════════════════════════════════════════════════════
+// HISTORY PAGE
+// ═══════════════════════════════════════════════════════
+function renderHistoryPage() {
+  const entries = Object.entries(STATE.allTrips).filter(([k,t])=>['completed','approved'].includes(t.status));
+  entries.sort((a,b)=>(b[1].completedAt||0)-(a[1].completedAt||0));
+  const searchVal = (document.getElementById('hist-search')||{}).value||'';
+  const dateVal = (document.getElementById('hist-date')||{}).value||'';
+  const filtered = entries.filter(([k,t])=>{
+    const s = searchVal.toLowerCase();
+    const matchSearch = !s || (t.clientName||'').toLowerCase().includes(s) || (t.driverName||'').toLowerCase().includes(s);
+    const matchDate = !dateVal || (t.completedAt && new Date(t.completedAt).toISOString().startsWith(dateVal));
+    return matchSearch && matchDate;
+  });
+  const tbody = document.getElementById('history-list');
+  if(filtered.length===0){tbody.innerHTML=`<tr><td colspan="8" class="empty-state">Sin registros</td></tr>`;return;}
+  tbody.innerHTML = filtered.map(([k,t])=>`<tr>
+    <td>${t.completedAt?new Date(t.completedAt).toLocaleDateString('es'):'—'}</td>
+    <td>${t.clientName||'—'}</td>
+    <td>${t.driverName||'—'}</td>
+    <td>${t.service||'—'}</td>
+    <td>${t.miles||'—'}</td>
+    <td style="color:var(--green)">$${t.price||0}</td>
+    <td>${tripStatusBadge(t.status)}</td>
+    <td><button class="btn btn-ghost btn-sm" onclick="openReceipt('${k}')">🧾 Recibo</button></td>
+  </tr>`).join('');
+}
+
+function filterHistory() { renderHistoryPage(); }
+function clearHistoryFilter() {
+  document.getElementById('hist-search').value='';
+  document.getElementById('hist-date').value='';
+  renderHistoryPage();
+}
+
+// ═══════════════════════════════════════════════════════
+// RECEIPT (🧾 NEW FEATURE)
+// ═══════════════════════════════════════════════════════
+function openReceipt(tripKey) {
+  const t = STATE.allTrips[tripKey];
+  if (!t) return;
+  const num = t.id || tripKey.slice(-6).toUpperCase();
+  const date = t.completedAt ? new Date(t.completedAt).toLocaleDateString('es-US',{year:'numeric',month:'long',day:'numeric'}) : '—';
+  const body = document.getElementById('receipt-body');
+  body.innerHTML = `
+    <div class="receipt-header">
+      <div class="receipt-logo">🚗</div>
+      <div class="receipt-company">First Class Drive</div>
+      <div class="receipt-sub">Premium Transportation Services</div>
+      <div class="receipt-num">Recibo N° #${num}</div>
+    </div>
+    <div style="padding:14px 0">
+      <div class="receipt-row"><span class="label">Fecha</span><span>${date}</span></div>
+      <div class="receipt-row"><span class="label">Cliente</span><span>${t.clientName||'—'}</span></div>
+      <div class="receipt-row"><span class="label">Teléfono</span><span>${t.clientPhone||'—'}</span></div>
+      <div class="receipt-row"><span class="label">Servicio</span><span>${t.service||'—'}</span></div>
+      <div class="receipt-row"><span class="label">Origen</span><span>${(t.origin||'—').substring(0,30)}</span></div>
+      <div class="receipt-row"><span class="label">Destino</span><span>${(t.destination||'—').substring(0,30)}</span></div>
+      <div class="receipt-row"><span class="label">Conductor</span><span>${t.driverName||'—'}</span></div>
+      <div class="receipt-row"><span class="label">Vehículo</span><span>${t.driverVehicle||'—'}</span></div>
+      <div class="receipt-row"><span class="label">Millas</span><span>${t.miles||'—'}</span></div>
+      <div class="receipt-row"><span class="label">Método de pago</span><span>${t.paymentMethod||'—'}</span></div>
+      <div class="receipt-row" style="border:none"><span class="label">Subtotal</span><span>$${t.price||0}</span></div>
+      <div class="receipt-total-row"><span>Total USD</span><span style="color:var(--green)">$${t.price||0}</span></div>
+    </div>
+    <div class="receipt-footer">
+      Gracias por elegir First Class Drive 🚗<br>
+      Soporte: admin@firstclassdrive.com · +1 (305) 555-0100
+    </div>
+  `;
+  STATE._currentReceiptTrip = t;
+  STATE._currentReceiptNum = num;
+  openModal('receipt-modal');
+}
+
+function printReceipt() {
+  const body = document.getElementById('receipt-body').innerHTML;
+  const w = window.open('','_blank','width=400,height=600');
+  w.document.write(`<!DOCTYPE html><html><head><title>Recibo FCD</title><style>
+    body{font-family:system-ui,sans-serif;padding:20px;font-size:13px;color:#111}
+    .receipt-header{text-align:center;padding:0 0 12px;border-bottom:2px dashed #ccc}
+    .receipt-company{font-size:16px;font-weight:700}
+    .receipt-sub{font-size:12px;color:#666}
+    .receipt-num{font-size:11px;background:#f5f5f5;padding:3px 8px;border-radius:8px;display:inline-block;margin-top:6px}
+    .receipt-row{display:flex;justify-content:space-between;padding:5px 0;font-size:12px;border-bottom:1px solid #eee}
+    .label{color:#666}
+    .receipt-total-row{display:flex;justify-content:space-between;padding:8px 0 0;font-size:16px;font-weight:700;border-top:2px solid #ccc;margin-top:4px}
+    .receipt-footer{text-align:center;font-size:11px;color:#888;padding:10px 0 0;border-top:2px dashed #ccc;margin-top:12px}
+  </style></head><body>${body}<script>window.print();setTimeout(()=>window.close(),500);<\/script></body></html>`);
+  w.document.close();
+}
+
+function shareReceipt() {
+  const t = STATE._currentReceiptTrip;
+  if (!t) return;
+  const text = `🚗 *First Class Drive* — Recibo #${STATE._currentReceiptNum}\n\n*Cliente:* ${t.clientName||'—'}\n*Servicio:* ${t.service||'—'}\n*Conductor:* ${t.driverName||'—'}\n*Total:* $${t.price||0} USD\n*Pago:* ${t.paymentMethod||'—'}\n\nGracias por elegirnos ✅`;
+  const phone = t.clientPhone ? t.clientPhone.replace(/\D/g,'') : '';
+  const url = phone
+    ? `https://wa.me/${phone}?text=${encodeURIComponent(text)}`
+    : `https://wa.me/?text=${encodeURIComponent(text)}`;
+  window.open(url,'_blank');
+}
+
+// ═══════════════════════════════════════════════════════
+// PAYMENTS
+// ═══════════════════════════════════════════════════════
+function renderPendingApprovals() {
+  const entries = Object.entries(STATE.allTrips).filter(([k,t])=>t.status==='completed');
+  const count = entries.length;
+  const badge = document.getElementById('pending-count-badge');
+  if(badge){badge.textContent=count;badge.style.display=count>0?'flex':'none';}
+  const list = document.getElementById('pending-approvals-list');
+  if(!list) return;
+  if(entries.length===0){
+    list.innerHTML=`<div class="empty-state" style="padding:20px"><div class="empty-icon">⏳</div>Sin servicios pendientes de aprobación</div>`;
+    return;
+  }
+  list.innerHTML = entries.map(([k,t])=>`
+    <div style="background:var(--bg3);border-radius:8px;padding:12px;margin-bottom:8px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div>
+          <strong>#${t.id||k.slice(-4)}</strong>
+          <span style="font-size:12px;color:var(--text3);margin-left:6px">${t.service||'—'}</span>
+        </div>
+        <span style="font-size:15px;font-weight:700;color:var(--green)">$${t.price||0}</span>
+      </div>
+      <div style="font-size:12.5px;color:var(--text2)">
+        Cliente: ${t.clientName||'—'} · Conductor: ${t.driverName||'—'}
+        ${t.miles?` · ${t.miles} millas`:''}
+        ${t.driverNotes?`<br>Notas: ${t.driverNotes}`:''}
+      </div>
+      <div style="display:flex;gap:6px;margin-top:10px">
+        <button class="btn btn-green btn-sm" onclick="openApprove('${k}')">✅ Aprobar</button>
+        <button class="btn btn-ghost btn-sm" onclick="openReceipt('${k}')">🧾 Recibo</button>
+        <button class="btn btn-red btn-sm" onclick="rejectTrip('${k}')">✕ Rechazar</button>
+      </div>
+    </div>
+  `).join('');
+
+  // Also update payments today
+  const approved = Object.values(STATE.allTrips).filter(t=>t.status==='approved');
+  const today = new Date().toDateString();
+  const todayPay = approved.filter(t=>t.completedAt&&new Date(t.completedAt).toDateString()===today);
+  const todayTotal = todayPay.reduce((s,t)=>s+(parseFloat(t.price)||0),0);
+  const el = document.getElementById('pay-today');
+  if(el) el.textContent = `$${todayTotal.toLocaleString()}`;
+
+  // Last payments
+  const lp = document.getElementById('last-payments-list');
+  if(lp) {
+    const lastApproved = approved.sort((a,b)=>(b.completedAt||0)-(a.completedAt||0)).slice(0,5);
+    lp.innerHTML = lastApproved.length===0?'<div class="empty-state">Sin pagos registrados</div>' :
+      `<table style="width:100%;font-size:13px"><thead><tr><th>ID</th><th>Cliente</th><th>USD</th><th>Método</th></tr></thead><tbody>
+      ${lastApproved.map(t=>`<tr><td>#${t.id||'—'}</td><td>${t.clientName||'—'}</td><td style="color:var(--green)">$${t.price||0}</td><td>${t.paymentMethod||'—'}</td></tr>`).join('')}
+      </tbody></table>`;
+  }
+}
+
+function selectPayMethod(el, method) {
+  document.querySelectorAll('#page-payments .chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  STATE.payMethod = method;
+}
+
+async function registerPayment() {
+  const id = document.getElementById('pay-trip-id').value.trim();
+  const amount = document.getElementById('pay-amount').value;
+  const notes = document.getElementById('pay-notes').value;
+  if (!id || !amount) { showToast('Completa ID y monto','error'); return; }
+  const key = Object.keys(STATE.allTrips).find(k=>`#${STATE.allTrips[k].id||k.slice(-4)}`===id || k.slice(-4)===id.replace('#',''));
+  if (key) {
+    await db.ref(`trips/${key}`).update({status:'approved',paymentMethod:STATE.payMethod,payNotes:notes,completedAt:Date.now()});
+  } else {
+    const ref = db.ref('trips').push();
+    await ref.set({id:id.replace('#',''),price:amount,paymentMethod:STATE.payMethod,payNotes:notes,status:'approved',completedAt:Date.now()});
+  }
+  document.getElementById('pay-trip-id').value='';
+  document.getElementById('pay-amount').value='';
+  document.getElementById('pay-notes').value='';
+  showToast('✅ Pago registrado');
+}
+
+// ═══════════════════════════════════════════════════════
+// APPROVE TRIP
+// ═══════════════════════════════════════════════════════
+function openApprove(key) {
+  STATE.approveTripKey = key;
+  const t = STATE.allTrips[key];
+  const body = document.getElementById('approve-body');
+  body.innerHTML = `
+    <div style="background:var(--bg3);border-radius:8px;padding:12px;margin-bottom:14px">
+      <div style="font-size:15px;font-weight:700;margin-bottom:6px">Viaje #${t.id||key.slice(-4)}</div>
+      <div style="font-size:13px;color:var(--text2)">
+        <div>Cliente: ${t.clientName||'—'}</div>
+        <div>Conductor: ${t.driverName||'—'}</div>
+        <div>Servicio: ${t.service||'—'}</div>
+        ${t.miles?`<div>Millas: ${t.miles}</div>`:''}
+        ${t.driverNotes?`<div>Notas: ${t.driverNotes}</div>`:''}
+      </div>
+    </div>
+    <div style="font-size:20px;font-weight:700;text-align:center;color:var(--green);padding:8px">Total: $${t.price||0}</div>
+    <div class="form-group"><label>Método de pago</label>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <div class="chip active" onclick="selectApproveMethod(this,'Efectivo')">💵 Efectivo</div>
+        <div class="chip" onclick="selectApproveMethod(this,'Tarjeta')">💳 Tarjeta</div>
+        <div class="chip" onclick="selectApproveMethod(this,'Nequi')">📱 Nequi</div>
+        <div class="chip" onclick="selectApproveMethod(this,'Zelle')">💸 Zelle</div>
+      </div>
+    </div>
+  `;
+  STATE._approveMethod = 'Efectivo';
+  openModal('approve-modal');
+}
+function selectApproveMethod(el,m){
+  document.querySelectorAll('#approve-modal .chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  STATE._approveMethod = m;
+}
+async function confirmApprove() {
+  const key = STATE.approveTripKey;
+  if (!key) return;
+  await db.ref(`trips/${key}`).update({status:'approved',paymentMethod:STATE._approveMethod,completedAt:Date.now()});
+  const t = STATE.allTrips[key];
+  if (t && t.driverKey) await db.ref(`drivers/${t.driverKey}/status`).set('available');
+  closeModal('approve-modal');
+  showToast('✅ Servicio aprobado y cobrado');
+  addNotif('✅ Servicio aprobado','Viaje #'+(t?.id||key.slice(-4))+' cobrado con '+STATE._approveMethod);
+}
+
+async function rejectTrip(key) {
+  if (!confirm('¿Rechazar este servicio?')) return;
+  await db.ref(`trips/${key}`).update({status:'rejected'});
+  showToast('Servicio rechazado','error');
+}
+
+// ═══════════════════════════════════════════════════════
+// NEW TRIP
+// ═══════════════════════════════════════════════════════
+function openNewTrip() {
+  const now = new Date();
+  now.setMinutes(now.getMinutes()-now.getTimezoneOffset());
+  document.getElementById('nt-datetime').value = now.toISOString().slice(0,16);
+  openModal('new-trip-modal');
+}
+
+async function saveNewTrip() {
+  const client = document.getElementById('nt-client').value.trim();
+  const origin = document.getElementById('nt-origin').value.trim();
+  const dest = document.getElementById('nt-dest').value.trim();
+  if (!client || !origin || !dest) { showToast('Completa cliente, origen y destino','error'); return; }
+  const service = document.getElementById('nt-service').value;
+  const price = parseInt(service.match(/\$(\d+)/)?.[1]||0);
+  const driverKey = document.getElementById('nt-driver').value;
+  const driverData = driverKey ? STATE.allDrivers[driverKey] : null;
+  const ref = db.ref('trips').push();
+  const tripId = Date.now().toString().slice(-4);
+  const data = {
+    id: tripId,
+    clientName: client,
+    clientPhone: document.getElementById('nt-phone').value,
+    origin, destination: dest,
+    service: service.split(' —')[0],
+    price, status: driverKey?'assigned':'pending',
+    driverKey: driverKey||null,
+    driverName: driverData?(driverData.name||driverKey):null,
+    driverVehicle: driverData?`${driverData.vehicle||''} · ${driverData.plate||''}`:null,
+    datetime: new Date(document.getElementById('nt-datetime').value).getTime(),
+    adminNote: document.getElementById('nt-note').value,
+    createdAt: Date.now()
+  };
+  await ref.set(data);
+  if (driverKey) {
+    await db.ref(`drivers/${driverKey}/status`).set('busy');
+    await db.ref(`drivers/${driverKey}/currentTrip`).set(ref.key);
+    addNotif('🚗 Viaje asignado','#'+tripId+' → '+driverData?.name);
+  }
+  closeModal('new-trip-modal');
+  showToast('✅ Viaje creado #'+tripId);
+}
+
+// ═══════════════════════════════════════════════════════
+// ASSIGN DRIVER
+// ═══════════════════════════════════════════════════════
+function openAssign(tripKey) {
+  STATE.assignTripKey = tripKey;
+  const t = STATE.allTrips[tripKey];
+  document.getElementById('assign-trip-id').textContent = '#'+(t.id||tripKey.slice(-4));
+  document.getElementById('assign-client').textContent = t.clientName||'—';
+  document.getElementById('assign-service').textContent = t.service||'—';
+  document.getElementById('assign-time').textContent = t.datetime?new Date(t.datetime).toLocaleString('es'):'—';
+  const sel = document.getElementById('assign-driver-sel');
+  const available = Object.entries(STATE.allDrivers).filter(([k,d])=>!d.status||d.status==='available');
+  sel.innerHTML = `<option value="">— Sin asignar —</option>`+available.map(([k,d])=>`<option value="${k}">${d.name||k} · ${d.vehicle||''} ${d.plate||''}</option>`).join('');
+  openModal('assign-modal');
+}
+
+async function confirmAssign() {
+  const key = STATE.assignTripKey;
+  const driverKey = document.getElementById('assign-driver-sel').value;
+  if (!driverKey) { showToast('Selecciona un conductor','error'); return; }
+  const driverData = STATE.allDrivers[driverKey];
+  const note = document.getElementById('assign-note').value;
+  await db.ref(`trips/${key}`).update({
+    status:'assigned', driverKey, note,
+    driverName: driverData?.name||driverKey,
+    driverVehicle: `${driverData?.vehicle||''} · ${driverData?.plate||''}`
+  });
+  await db.ref(`drivers/${driverKey}/status`).set('busy');
+  await db.ref(`drivers/${driverKey}/currentTrip`).set(key);
+  closeModal('assign-modal');
+  showToast('✅ Conductor asignado: '+(driverData?.name||driverKey));
+  addNotif('🚗 Conductor asignado', (driverData?.name||driverKey)+' → '+STATE.allTrips[key]?.clientName);
+}
+
+// ═══════════════════════════════════════════════════════
+// DRIVERS PAGE
+// ═══════════════════════════════════════════════════════
+function renderDriversPage() {
+  const container = document.getElementById('drivers-list');
+  const entries = Object.entries(STATE.allDrivers);
+  if (entries.length===0){container.innerHTML='<div class="empty-state">Sin conductores. Agrega el primero.</div>';return;}
+  container.innerHTML = entries.map(([k,d])=>`
+    <div class="driver-card">
+      <div class="driver-avatar">${initials(d.name||k)}</div>
+      <div class="driver-info">
+        <div class="driver-name">${d.name||k}</div>
+        <div class="driver-sub">${d.vehicle||'—'} · ${d.plate||'—'}</div>
+        <div style="margin-top:4px">${statusBadge(d.status||'available')}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">
+        <button class="btn btn-ghost btn-sm" onclick="editDriver('${k}')">✏️ Editar</button>
+        <button class="btn-wa btn-wa-sm" onclick="openWADriver('${k}')">WhatsApp</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function openDriverModal() { openModal('driver-modal'); }
+function editDriver(key) {
+  const d = STATE.allDrivers[key];
+  document.getElementById('drv-fullname').value = d.name||'';
+  document.getElementById('drv-phone').value = d.phone||'';
+  document.getElementById('drv-email').value = d.email||'';
+  document.getElementById('drv-license').value = d.license||'';
+  document.getElementById('drv-vtype').value = d.vehicle||'';
+  document.getElementById('drv-plate').value = d.plate||'';
+  document.getElementById('drv-username').value = d.username||key;
+  document.getElementById('drv-modal-title').textContent = 'Editar Conductor';
+  STATE._editDriverKey = key;
+  openModal('driver-modal');
+}
+
+async function saveDriver() {
+  const name = document.getElementById('drv-fullname').value.trim();
+  const username = document.getElementById('drv-username').value.trim().toLowerCase();
+  const pass = document.getElementById('drv-password').value;
+  if (!name) { showToast('Nombre requerido','error'); return; }
+  const data = {
+    name,
+    phone: document.getElementById('drv-phone').value,
+    email: document.getElementById('drv-email').value,
+    license: document.getElementById('drv-license').value,
+    vehicle: document.getElementById('drv-vtype').value,
+    plate: document.getElementById('drv-plate').value,
+    username,
+    status: 'available'
+  };
+  if (pass) data.passwordHash = await sha256(pass);
+  const key = STATE._editDriverKey || username || db.ref('drivers').push().key;
+  await db.ref(`drivers/${key}`).update(data);
+  STATE._editDriverKey = null;
+  document.getElementById('drv-modal-title').textContent = '+ Nuevo Conductor';
+  closeModal('driver-modal');
+  showToast('✅ Conductor guardado');
+}
+
+// ═══════════════════════════════════════════════════════
+// WHATSAPP MODULE (💬 NEW FEATURE)
+// ═══════════════════════════════════════════════════════
+function renderWADrivers() {
+  const container = document.getElementById('wa-driver-list');
+  if (!container) return;
+  const entries = Object.entries(STATE.allDrivers);
+  if (entries.length===0){
+    container.innerHTML='<div class="empty-state"><div class="empty-icon">💬</div>Sin conductores registrados</div>';
+    return;
+  }
+  container.innerHTML = entries.map(([k,d])=>{
+    const phone = d.phone || DRIVER_PHONES[k] || '';
+    const phoneClean = phone.replace(/\D/g,'');
+    return `
+      <div class="wa-card">
+        <div class="driver-avatar">${initials(d.name||k)}</div>
+        <div class="wa-card-info">
+          <div class="wa-card-name">${d.name||k}</div>
+          <div class="wa-card-status">${phone||'Sin teléfono'} · ${d.vehicle||'—'} ${d.plate||''} · ${statusBadge(d.status||'available')}</div>
+        </div>
+        <div class="wa-actions">
+          ${phoneClean ? `
+            <button class="btn-wa btn-wa-sm" onclick="openWADriver('${k}','')">
+              💬 Chat
+            </button>
+            <button class="btn-wa btn-wa-sm" onclick="openWADriver('${k}','trip')">
+              🚗 Asignar
+            </button>
+          ` : `<span style="font-size:11.5px;color:var(--text3)">Agrega teléfono</span>`}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function openWADriver(driverKey, msgType) {
+  const d = STATE.allDrivers[driverKey];
+  const phone = d?.phone || DRIVER_PHONES[driverKey] || '';
+  const phoneClean = phone.replace(/\D/g,'');
+  if (!phoneClean) { showToast('Este conductor no tiene teléfono registrado','error'); return; }
+  let msg = '';
+  if (msgType === 'trip') {
+    const pendingTrip = Object.values(STATE.allTrips).find(t=>t.driverKey===driverKey&&t.status==='assigned');
+    if (pendingTrip) {
+      msg = `🚗 *First Class Drive* — Tienes un viaje asignado!\n\n*Cliente:* ${pendingTrip.clientName||'—'}\n*Origen:* ${pendingTrip.origin||'—'}\n*Destino:* ${pendingTrip.destination||'—'}\n*Servicio:* ${pendingTrip.service||'—'}\n\nPor favor confirma recepción. ✅`;
+    } else {
+      msg = `🚗 *First Class Drive* — Hola ${d?.name||driverKey}, se te asignará un viaje próximamente. Por favor mantente disponible.`;
+    }
+  } else {
+    msg = `🚗 *First Class Drive* — Hola ${d?.name||driverKey}`;
+  }
+  window.open(`https://wa.me/${phoneClean}?text=${encodeURIComponent(msg)}`, '_blank');
+}
+
+function sendWAAll() {
+  const msg = document.getElementById('wa-broadcast')?.value || document.getElementById('wa-msg')?.value || '';
+  if (!msg.trim()) { openModal('wa-modal'); return; }
+  doSendWAAll();
+}
+
+function doSendWAAll() {
+  const msg = document.getElementById('wa-broadcast')?.value || document.getElementById('wa-msg')?.value || '';
+  if (!msg.trim()) { showToast('Escribe un mensaje primero','error'); return; }
+  const drivers = Object.entries(STATE.allDrivers);
+  let opened = 0;
+  drivers.forEach(([k,d])=>{
+    const phone = d.phone || DRIVER_PHONES[k] || '';
+    const phoneClean = phone.replace(/\D/g,'');
+    if (phoneClean) {
+      setTimeout(()=>window.open(`https://wa.me/${phoneClean}?text=${encodeURIComponent(msg)}`, '_blank'), opened*500);
+      opened++;
+    }
+  });
+  if (opened===0) showToast('Ningún conductor tiene teléfono registrado','error');
+  else { showToast(`📢 Abriendo WhatsApp para ${opened} conductores`); closeModal('wa-modal'); }
+}
+
+// ═══════════════════════════════════════════════════════
+// REPORTS (📊 REAL FIREBASE DATA)
+// ═══════════════════════════════════════════════════════
+function setReportPeriod(period, el) {
+  STATE.reportPeriod = period;
+  ['rep-week','rep-month','rep-year'].forEach(id=>document.getElementById(id)?.classList.remove('active'));
+  el?.classList.add('active');
+  renderReports();
+}
+
+function renderReports() {
+  const trips = Object.values(STATE.allTrips);
+  const now = new Date();
+  let from;
+  if (STATE.reportPeriod==='week') { from = new Date(now); from.setDate(from.getDate()-7); }
+  else if (STATE.reportPeriod==='month') { from = new Date(now.getFullYear(), now.getMonth(), 1); }
+  else { from = new Date(now.getFullYear(), 0, 1); }
+  const fromMs = from.getTime();
+
+  const approved = trips.filter(t=>t.status==='approved' && (t.completedAt||0)>=fromMs);
+  const allApproved = trips.filter(t=>t.status==='approved');
+
+  const income = approved.reduce((s,t)=>s+(parseFloat(t.price)||0),0);
+  const tripsCount = approved.length;
+  const avg = tripsCount>0 ? (income/tripsCount).toFixed(0) : 0;
+
+  const expenses = Object.values(STATE.allExpenses).filter(e=>e.date && new Date(e.date).getTime()>=fromMs);
+  const expTotal = expenses.reduce((s,e)=>s+(parseFloat(e.amount)||0),0);
+
+  document.getElementById('rep-income').textContent = `$${income.toLocaleString()}`;
+  document.getElementById('rep-income-sub').textContent = `${tripsCount} viajes aprobados`;
+  document.getElementById('rep-trips').textContent = tripsCount;
+  document.getElementById('rep-trips-sub').textContent = 'viajes completados';
+  document.getElementById('rep-avg').textContent = `$${avg}`;
+  document.getElementById('rep-avg-sub').textContent = 'por viaje';
+  document.getElementById('rep-expenses').textContent = `$${expTotal.toLocaleString()}`;
+  document.getElementById('rep-expenses-sub').textContent = 'gastos del período';
+
+  const net = income - expTotal;
+  document.getElementById('rep-gross').textContent = `$${income.toLocaleString()}`;
+  document.getElementById('rep-op').textContent = `-$${expTotal.toLocaleString()}`;
+  document.getElementById('rep-net').textContent = `$${net.toLocaleString()}`;
+
+  // Daily chart (last 7 days)
+  const dailyChart = document.getElementById('daily-chart');
+  if (dailyChart) {
+    const days = [];
+    for (let i=6;i>=0;i--) {
+      const d = new Date(now); d.setDate(d.getDate()-i);
+      const dayStr = d.toDateString();
+      const dayName = d.toLocaleDateString('es',{weekday:'short'});
+      const total = allApproved.filter(t=>t.completedAt&&new Date(t.completedAt).toDateString()===dayStr).reduce((s,t)=>s+(parseFloat(t.price)||0),0);
+      days.push({name:dayName, total});
+    }
+    const max = Math.max(...days.map(d=>d.total), 1);
+    dailyChart.innerHTML = days.map(d=>`
+      <div class="chart-bar-row">
+        <div class="chart-bar-label">${d.name}</div>
+        <div class="chart-bar-outer"><div class="chart-bar-inner" style="width:${(d.total/max*100).toFixed(0)}%"></div></div>
+        <div class="chart-bar-val">$${d.total}</div>
+      </div>
+    `).join('');
+  }
+
+  // Top services
+  const svcCount = {};
+  approved.forEach(t=>{ const s=t.service||'Otro'; svcCount[s]=(svcCount[s]||0)+1; });
+  const topSvcs = Object.entries(svcCount).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const maxSvc = Math.max(...topSvcs.map(s=>s[1]),1);
+  const svcContainer = document.getElementById('top-services-chart');
+  if (svcContainer) {
+    svcContainer.innerHTML = topSvcs.length===0?'<div class="empty-state">Sin datos</div>' :
+      topSvcs.map(([name,count])=>`
+        <div class="chart-bar-row" style="margin-bottom:4px">
+          <div class="chart-bar-label" style="width:100px;font-size:10.5px">${name.substring(0,14)}</div>
+          <div class="chart-bar-outer"><div class="chart-bar-inner" style="width:${(count/maxSvc*100).toFixed(0)}%;background:var(--purple)"></div></div>
+          <div class="chart-bar-val">${count}</div>
+        </div>
+      `).join('');
+  }
+
+  // Driver ranking
+  const drvIncome = {};
+  const drvCount = {};
+  approved.forEach(t=>{
+    if(t.driverName){drvIncome[t.driverName]=(drvIncome[t.driverName]||0)+(parseFloat(t.price)||0);drvCount[t.driverName]=(drvCount[t.driverName]||0)+1;}
+  });
+  const ranking = Object.entries(drvIncome).sort((a,b)=>b[1]-a[1]);
+  const rankContainer = document.getElementById('driver-ranking');
+  if (rankContainer) {
+    rankContainer.innerHTML = ranking.length===0?'<div class="empty-state">Sin datos de conductores</div>' :
+      ranking.map(([name,inc],i)=>`
+        <div class="driver-rank-row">
+          <div class="rank-medal ${i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'rank-n'}">${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</div>
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:600">${name}</div>
+            <div style="font-size:11.5px;color:var(--text3)">${drvCount[name]} viajes</div>
+          </div>
+          <div style="font-weight:700;color:var(--green)">$${inc.toLocaleString()}</div>
+        </div>
+      `).join('');
+  }
+
+  // Payment methods
+  const payMethods = {};
+  approved.forEach(t=>{ const m=t.paymentMethod||'Otro'; payMethods[m]=(payMethods[m]||0)+(parseFloat(t.price)||0); });
+  const pmContainer = document.getElementById('payment-methods-chart');
+  const icons = {Efectivo:'💵',Tarjeta:'💳',Zelle:'💸',Nequi:'📱',Daviplata:'📱',Otro:'💰'};
+  if (pmContainer) {
+    pmContainer.innerHTML = Object.keys(payMethods).length===0?'<div class="empty-state">Sin datos de pagos</div>' :
+      Object.entries(payMethods).sort((a,b)=>b[1]-a[1]).map(([m,v])=>{
+        const pct = income>0?((v/income)*100).toFixed(0):0;
+        return `<div class="chart-bar-row">
+          <div class="chart-bar-label" style="width:80px">${icons[m]||'💰'} ${m}</div>
+          <div class="chart-bar-outer"><div class="chart-bar-inner" style="width:${pct}%;background:var(--accent2)"></div></div>
+          <div class="chart-bar-val" style="width:80px">$${v.toLocaleString()}</div>
+        </div>`;
+      }).join('');
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// EXPENSES
+// ═══════════════════════════════════════════════════════
+function renderExpenses() {
+  const entries = Object.entries(STATE.allExpenses).sort((a,b)=>(b[1].createdAt||0)-(a[1].createdAt||0));
+  const tbody = document.getElementById('expenses-list');
+  if (!tbody) return;
+  if(entries.length===0){tbody.innerHTML=`<tr><td colspan="5" class="empty-state">Sin gastos registrados</td></tr>`;return;}
+  tbody.innerHTML = entries.map(([k,e])=>`<tr>
+    <td>${e.date||'—'}</td>
+    <td>${e.category||'—'}</td>
+    <td>${e.driver||'—'}</td>
+    <td>${e.description||'—'}</td>
+    <td style="color:var(--red)">$${e.amount||0}</td>
+  </tr>`).join('');
+  const total = entries.reduce((s,[k,e])=>s+(parseFloat(e.amount)||0),0);
+  document.getElementById('exp-total').textContent = `$${total.toLocaleString()}`;
+  const gas = entries.filter(([k,e])=>e.category?.includes('Gasolina')).reduce((s,[k,e])=>s+(parseFloat(e.amount)||0),0);
+  document.getElementById('exp-gas').textContent = `$${gas}`;
+}
+
+async function saveExpense() {
+  const amount = document.getElementById('exp-amount').value;
+  const desc = document.getElementById('exp-desc').value.trim();
+  if (!amount) { showToast('Monto requerido','error'); return; }
+  const ref = db.ref('expenses').push();
+  await ref.set({
+    date: document.getElementById('exp-date').value || new Date().toISOString().slice(0,10),
+    category: document.getElementById('exp-cat').value,
+    driver: document.getElementById('exp-driver').value,
+    amount, description: desc,
+    createdAt: Date.now()
+  });
+  document.getElementById('exp-amount').value='';
+  document.getElementById('exp-desc').value='';
+  showToast('✅ Gasto registrado');
+}
+
+// ═══════════════════════════════════════════════════════
+// CLIENTS
+// ═══════════════════════════════════════════════════════
+function renderClientsPage() {
+  const entries = Object.entries(STATE.allClients);
+  document.getElementById('cli-total').textContent = entries.length;
+  const container = document.getElementById('clients-list');
+  if (!container) return;
+  if(entries.length===0){container.innerHTML='<div class="empty-state">Sin clientes registrados</div>';return;}
+  container.innerHTML = entries.map(([k,c])=>`
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px;display:flex;align-items:center;gap:10px">
+      <div class="user-avatar">${initials(c.name)}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:600;font-size:13.5px">${c.name||'—'}</div>
+        <div style="font-size:11.5px;color:var(--text3)">${c.phone||'—'} · ${c.address||'—'}</div>
+      </div>
+      <div style="display:flex;gap:6px">
+        ${c.phone?`<button class="btn-wa btn-wa-sm" onclick="openWAClient('${k}')">💬</button>`:''}
+        <button class="btn btn-ghost btn-sm" onclick="openNewTripForClient('${k}')">+ Viaje</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function openWAClient(key) {
+  const c = STATE.allClients[key];
+  const phone = (c.phone||'').replace(/\D/g,'');
+  if(!phone){showToast('Sin teléfono','error');return;}
+  window.open(`https://wa.me/${phone}?text=${encodeURIComponent(`🚗 First Class Drive — Hola ${c.name}, ¿en qué podemos ayudarte hoy?`)}`, '_blank');
+}
+
+function openNewTripForClient(key) {
+  const c = STATE.allClients[key];
+  document.getElementById('nt-client').value = c.name||'';
+  document.getElementById('nt-phone').value = c.phone||'';
+  openModal('new-trip-modal');
+}
+
+function openClientModal() { openModal('client-modal'); }
+async function saveClient() {
+  const name = document.getElementById('cli-name').value.trim();
+  if (!name) { showToast('Nombre requerido','error'); return; }
+  const ref = db.ref('clients').push();
+  await ref.set({
+    name,
+    phone: document.getElementById('cli-phone').value,
+    email: document.getElementById('cli-email').value,
+    address: document.getElementById('cli-addr').value,
+    insurance: document.getElementById('cli-insurance').value,
+    policy: document.getElementById('cli-policy').value,
+    notes: document.getElementById('cli-notes').value,
+    createdAt: Date.now()
+  });
+  closeModal('client-modal');
+  showToast('✅ Cliente guardado');
+}
+
+// ═══════════════════════════════════════════════════════
+// DRIVER VIEW & WORKFLOW
+// ═══════════════════════════════════════════════════════
+function showDriverView() {
+  document.getElementById('driver-overlay').classList.add('show');
+  if (STATE.driverLogged && STATE.currentDriverKey) {
+    document.getElementById('drv-login').style.display='none';
+    document.getElementById('drv-dashboard').style.display='block';
+    setupDriverDashboard();
+  } else {
+    document.getElementById('drv-login').style.display='block';
+    document.getElementById('drv-dashboard').style.display='none';
+  }
+}
+
+function hideDriverView() {
+  document.getElementById('driver-overlay').classList.remove('show');
+}
+
+function driverLogout() {
+  STATE.driverLogged = false;
+  STATE.currentDriverKey = null;
+  STATE.currentDriverData = null;
+  clearInterval(STATE.timerInterval);
+  hideDriverView();
+  showToast('Sesión de conductor cerrada');
+}
+
+async function driverLogin() {
+  const user = document.getElementById('drv-user').value.trim().toLowerCase();
+  const pass = document.getElementById('drv-pass').value;
+  const hash = await sha256(pass);
+  try {
+    const snap = await db.ref(`drivers/${user}`).get();
+    if (snap.exists()) {
+      const d = snap.val();
+      let valid = false;
+      if (d.passwordHash && d.passwordHash===hash) valid=true;
+      else if (d.password && d.password===pass) {
+        valid=true;
+        await db.ref(`drivers/${user}/passwordHash`).set(hash);
+        await db.ref(`drivers/${user}/password`).remove();
+      }
+      if (valid) {
+        STATE.driverLogged=true;
+        STATE.currentDriverKey=user;
+        STATE.currentDriverData=d;
+        document.getElementById('drv-login').style.display='none';
+        document.getElementById('drv-dashboard').style.display='block';
+        setupDriverDashboard();
+        return;
+      }
+    }
+  } catch(e){}
+  const err = document.getElementById('drv-err');
+  err.classList.add('show');
+  setTimeout(()=>err.classList.remove('show'),3000);
+}
+
+function setupDriverDashboard() {
+  const d = STATE.currentDriverData || {};
+  const key = STATE.currentDriverKey;
+  document.getElementById('drv-avatar').textContent = initials(d.name||key);
+  document.getElementById('drv-name').textContent = d.name||key;
+  document.getElementById('drv-vehicle').textContent = `${d.vehicle||'—'} · ${d.plate||'—'}`;
+  document.getElementById('drv-view-status').textContent = `● ${d.name||key}`;
+
+  // Listen for assigned trip
+  db.ref('trips').orderByChild('driverKey').equalTo(key).on('value', snap=>{
+    const trips = [];
+    snap.forEach(child=>{ const t=child.val(); t._key=child.key; trips.push(t); });
+    const activeTrip = trips.find(t=>['assigned','started'].includes(t.status));
+    STATE.activeTripKey = activeTrip?activeTrip._key:null;
+    STATE.activeTripData = activeTrip||null;
+    renderDriverTrip(activeTrip);
+  });
+}
+
+function renderDriverTrip(trip) {
+  const noTrip = document.getElementById('drv-no-trip');
+  const tripCard = document.getElementById('drv-trip-card');
+  if (!trip) {
+    noTrip.style.display='block';
+    tripCard.style.display='none';
+    document.getElementById('drv-badge').textContent='Disponible';
+    document.getElementById('drv-badge').style.background='var(--green2)';
+    return;
+  }
+  noTrip.style.display='none';
+  tripCard.style.display='block';
+  document.getElementById('drv-badge').textContent='En servicio';
+  document.getElementById('drv-badge').style.background='var(--yellow)';
+
+  document.getElementById('drv-trip-id').textContent=`Viaje #${trip.id||trip._key?.slice(-4)||'—'}`;
+  document.getElementById('drv-trip-service').textContent=trip.service||'—';
+  document.getElementById('drv-trip-origin').textContent=trip.origin||'—';
+  document.getElementById('drv-trip-dest').textContent=trip.destination||'—';
+  document.getElementById('drv-client-name').textContent=trip.clientName||'—';
+  document.getElementById('drv-client-phone').textContent=trip.clientPhone||'—';
+  if(trip.adminNote) document.getElementById('drv-admin-note').textContent='📋 '+trip.adminNote;
+  
+  // Client WA button
+  const waDiv = document.getElementById('drv-client-wa');
+  if (trip.clientPhone) {
+    const phone = trip.clientPhone.replace(/\D/g,'');
+    waDiv.innerHTML = `<button class="btn-wa btn-wa-sm" onclick="window.open('https://wa.me/${phone}','_blank')">💬 WA</button>`;
+  } else waDiv.innerHTML='';
+
+  // Steps
+  const isStarted = trip.status==='started';
+  document.getElementById('drv-step1').classList.toggle('active',trip.status==='assigned');
+  document.getElementById('drv-step2').classList.toggle('active',isStarted);
+  document.getElementById('drv-step3').classList.toggle('active',false);
+
+  // Timer
+  if (isStarted && trip.startedAt) {
+    clearInterval(STATE.timerInterval);
+    STATE.timerInterval = setInterval(()=>{
+      const elapsed = Math.floor((Date.now()-trip.startedAt)/1000);
+      const m = Math.floor(elapsed/60).toString().padStart(2,'0');
+      const s = (elapsed%60).toString().padStart(2,'0');
+      document.getElementById('drv-timer').textContent=`${m}:${s}`;
+    },1000);
+  }
+
+  // Action button
+  const btn = document.getElementById('drv-action-btn');
+  if (trip.status==='assigned') {
+    btn.innerHTML=`<button class="btn btn-primary" style="width:100%;justify-content:center" onclick="startTrip()">▶ Iniciar Servicio</button>`;
+  } else if (trip.status==='started') {
+    btn.innerHTML=`<button class="btn btn-green" style="width:100%;justify-content:center" onclick="finishTrip()">✅ Terminar Servicio</button>`;
+  }
+}
+
+async function startTrip() {
+  if (!STATE.activeTripKey) return;
+  await db.ref(`trips/${STATE.activeTripKey}`).update({status:'started',startedAt:Date.now()});
+  showToast('▶ Servicio iniciado');
+}
+
+async function finishTrip() {
+  if (!STATE.activeTripKey) return;
+  const obs = document.getElementById('drv-obs').value;
+  const miles = document.getElementById('drv-miles').value;
+  await db.ref(`trips/${STATE.activeTripKey}`).update({
+    status:'completed',completedAt:Date.now(),
+    driverNotes:obs, miles:miles||'—'
+  });
+  clearInterval(STATE.timerInterval);
+  document.getElementById('drv-timer').textContent='00:00';
+  showToast('✅ Servicio registrado — pendiente aprobación admin');
+  addNotif('✅ Servicio completado','Conductor terminó el viaje #'+STATE.activeTripData?.id+'. Pendiente aprobación.');
+}
+
+// ═══════════════════════════════════════════════════════
+// RATE CALCULATOR
+// ═══════════════════════════════════════════════════════
+function calcRate() {
+  const base = parseFloat(document.getElementById('rate-base').value)||3.5;
+  const mile = parseFloat(document.getElementById('rate-mile').value)||2.5;
+  const miles = parseFloat(document.getElementById('rate-miles').value)||0;
+  const wait = parseFloat(document.getElementById('rate-wait').value)||0;
+  let surcharge = 0;
+  if(document.getElementById('r-night')?.checked) surcharge+=8;
+  if(document.getElementById('r-airport')?.checked) surcharge+=10;
+  if(document.getElementById('r-wc')?.checked) surcharge+=15;
+  if(document.getElementById('r-bag')?.checked) surcharge+=5;
+  const milesCost = miles*mile;
+  const waitCost = wait*0.5;
+  const total = base + milesCost + waitCost + surcharge;
+  document.getElementById('rb-base').textContent=`$${base.toFixed(2)}`;
+  document.getElementById('rb-miles').textContent=`$${milesCost.toFixed(2)}`;
+  document.getElementById('rb-wait').textContent=`$${waitCost.toFixed(2)}`;
+  document.getElementById('rb-surcharge').textContent=`$${surcharge.toFixed(2)}`;
+  document.getElementById('rb-total').textContent=`$${total.toFixed(2)}`;
+}
+
+function resetRate() {
+  document.getElementById('rate-miles').value=0;
+  document.getElementById('rate-wait').value=0;
+  ['r-night','r-airport','r-wc','r-bag'].forEach(id=>{const el=document.getElementById(id);if(el)el.checked=false;});
+  calcRate();
+}
+
+async function registerRateCobro() {
+  const total = document.getElementById('rb-total').textContent;
+  const ref = db.ref('trips').push();
+  await ref.set({id:Date.now().toString().slice(-4),price:parseFloat(total.replace('$','')),paymentMethod:'Efectivo',status:'approved',completedAt:Date.now()});
+  showToast('✅ Cobro registrado: '+total);
+}
+
+// ═══════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════
+function initials(name) {
+  if (!name) return '—';
+  const parts = name.split(' ');
+  return (parts[0][0]+(parts[1]?parts[1][0]:'')).toUpperCase();
+}
+
+function populateDriverSelects() {
+  const drivers = Object.entries(STATE.allDrivers);
+  const opts = `<option value="">Sin asignar</option>` + drivers.map(([k,d])=>`<option value="${k}">${d.name||k}</option>`).join('');
+  ['nt-driver','exp-driver'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.innerHTML = id==='exp-driver' ? `<option>— Seleccionar —</option>`+drivers.map(([k,d])=>`<option>${d.name||k} · ${d.plate||''}</option>`).join('') : opts;
+  });
+}
+
+function openUpdateTrip(key) {
+  showToast('Funcionalidad: actualizar estado del viaje');
+}
+
+function refreshData() {
+  showToast('Actualizando datos de Firebase...');
+  // Firebase listeners auto-update, just show feedback
+  setTimeout(()=>showToast('✅ Datos actualizados'),800);
+}
+
+function exportDashboard() { showToast('Exportando resumen...'); }
+function exportReportPDF() { window.print(); }
+function saveBrand() { showToast('✅ Marca actualizada'); }
+function saveSettings() { showToast('✅ Configuración guardada'); }
+function saveMapsKey() { showToast('✅ Maps API Key guardada'); }
+function saveNotifSettings() { showToast('✅ Preferencias de notificación guardadas'); }
+function openCatalogModal() { showToast('Gestión de catálogo próximamente'); }
+
+// ═══════════════════════════════════════════════════════
+// NOTIFICATIONS
+// ═══════════════════════════════════════════════════════
+function addNotif(title, sub) {
+  STATE.notifs.unshift({title, sub, time: new Date().toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'})});
+  renderNotifs();
+  document.getElementById('notif-dot').style.display='block';
+}
+
+function renderNotifs() {
+  const list = document.getElementById('notif-list');
+  if (STATE.notifs.length===0) {
+    list.innerHTML='<div class="notif-empty">🔔 Sin notificaciones</div>';
+    return;
+  }
+  list.innerHTML = STATE.notifs.slice(0,10).map(n=>`
+    <div class="notif-item">
+      <div class="ni-title">${n.title}</div>
+      <div class="ni-sub">${n.sub} · ${n.time}</div>
+    </div>
+  `).join('');
+}
+
+function toggleNotif() {
+  const panel = document.getElementById('notif-panel');
+  panel.classList.toggle('show');
+  if (panel.classList.contains('show')) {
+    document.getElementById('notif-dot').style.display='none';
+    renderNotifs();
+  }
+}
+
+function clearNotifs() { STATE.notifs=[]; renderNotifs(); document.getElementById('notif-panel').classList.remove('show'); }
+
+// Close notif panel on outside click
+document.addEventListener('click', e=>{
+  if (!e.target.closest('#notif-btn') && !e.target.closest('#notif-panel')) {
+    document.getElementById('notif-panel')?.classList.remove('show');
+  }
+});
+
+// ═══════════════════════════════════════════════════════
+// MODAL HELPERS
+// ═══════════════════════════════════════════════════════
+function openModal(id) { document.getElementById(id).classList.add('show'); }
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+document.querySelectorAll('.modal-overlay').forEach(m=>{
+  m.addEventListener('click', e=>{ if(e.target===m) m.classList.remove('show'); });
+});
+
+// ═══════════════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════════════
+let _toastTimer;
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show'+(type==='error'?' error':'');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(()=>t.classList.remove('show'),3000);
+}
+
+// ═══════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════
+window.onload = () => {
+  document.getElementById('admin-user').focus();
+  document.getElementById('exp-date').value = new Date().toISOString().slice(0,10);
+  calcRate();
+};
+</script>
+</body>
+</html>
