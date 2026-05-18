@@ -996,7 +996,7 @@ function loadFareRanges() {
 // ═══════════════════════════════════════════════════════
 // ★★★ GPS / GOOGLE MAPS DISTANCE MATRIX ★★★
 // ═══════════════════════════════════════════════════════
-let MAPS_API_KEY = '';
+let MAPS_API_KEY = 'AIzaSyAkD6GOLCOKJkE0kkhhTfFRro9O-HONWg4';
 let MAPS_REGION = 'US';
 
 function loadMapsKey() {
@@ -1256,7 +1256,6 @@ function switchTab(el, targetId) {
 // ═══════════════════════════════════════════════════════
 function startFirebaseListeners() {
   loadFareRanges();
-  loadMapsKey(); // ← NUEVO: carga GPS key desde Firebase
   db.ref('drivers').on('value', snap=>{
     STATE.allDrivers = snap.val()||{};
     renderDashboardDrivers();
