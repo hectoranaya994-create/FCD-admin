@@ -1076,16 +1076,16 @@ function renderTripsPage(){
   const completed=entries.filter(([k,t])=>['completed','approved'].includes(t.status));
   const ab=document.getElementById('trips-active-body');
   if(active.length===0){ab.innerHTML=`<tr><td colspan="8" class="empty-state">Sin viajes activos</td></tr>`;}
-  else ab.innerHTML=active.map(([k,t])=>`<tr><td><strong>#${t.id||k.slice(-4)}</strong></td><td>${t.clientName||'—'}</td><td>${(t.origin||'—').substring(0,20)}</td><td>${(t.destination||'—').substring(0,20)}</td><td>${t.driverName||'—'}</td><td>${tripStatusBadge(t.status)}</td><td style="color:var(--green)">$${t.price||0}</td><td style="display:flex;gap:4px"><button class="btn btn-ghost btn-sm" onclick="openUpdateTrip('${k}')">Ver</button><button class="btn btn-primary btn-sm" onclick="openReassign('${k}')">🔄 Reasignar</button></td></tr>`).join('');
+  else ab.innerHTML=active.map(([k,t])=>`<tr><td><strong>#${t.id||k.slice(-4)}</strong></td><td>${t.clientName||'—'}</td><td>${(t.origin||'—').substring(0,20)}</td><td>${(t.destination||'—').substring(0,20)}</td><td>${t.driverName||'—'}</td><td>${tripStatusBadge(t.status)}</td><td style="color:var(--green)">$${t.price||0}</td><td style="display:flex;gap:4px"><button class="btn btn-ghost btn-sm" onclick="openUpdateTrip('${k}')">Ver</button><button class="btn btn-primary btn-sm" onclick="openReassign('${k}')">🔄 Reasignar</button><button class="btn btn-red btn-sm" onclick="cancelTrip('${k}')">✕ Cancelar</button></td></tr>`).join('');
   const pb=document.getElementById('trips-pending-body');
   if(pending.length===0){pb.innerHTML=`<tr><td colspan="6" class="empty-state">Sin viajes pendientes</td></tr>`;}
-  else pb.innerHTML=pending.map(([k,t])=>`<tr><td><strong>#${t.id||k.slice(-4)}</strong></td><td>${t.clientName||'—'}</td><td>${t.datetime?new Date(t.datetime).toLocaleString('es'):'—'}</td><td>${t.service||'—'}</td><td><span class="badge badge-yellow">⏳ Pendiente</span></td><td style="display:flex;gap:4px"><button class="btn btn-primary btn-sm" onclick="openAssign('${k}')">🚗 Asignar</button>${t.driverKey?`<button class="btn btn-ghost btn-sm" onclick="openReassign('${k}')">🔄 Reasignar</button>`:''}</td></tr>`).join('');
+  else pb.innerHTML=pending.map(([k,t])=>`<tr><td><strong>#${t.id||k.slice(-4)}</strong></td><td>${t.clientName||'—'}</td><td>${t.datetime?new Date(t.datetime).toLocaleString('es'):'—'}</td><td>${t.service||'—'}</td><td><span class="badge badge-yellow">⏳ Pendiente</span></td><td style="display:flex;gap:4px"><button class="btn btn-primary btn-sm" onclick="openAssign('${k}')">🚗 Asignar</button>${t.driverKey?`<button class="btn btn-ghost btn-sm" onclick="openReassign('${k}')">🔄 Reasignar</button>`:''}<button class="btn btn-red btn-sm" onclick="cancelTrip('${k}')">✕ Cancelar</button></td></tr>`).join('');
   const cb=document.getElementById('trips-completed-body');
   if(completed.length===0){cb.innerHTML=`<tr><td colspan="7" class="empty-state">Sin viajes completados</td></tr>`;}
   else cb.innerHTML=completed.map(([k,t])=>`<tr><td><strong>#${t.id||k.slice(-4)}</strong></td><td>${t.clientName||'—'}</td><td>${t.driverName||'—'}</td><td>${t.completedAt?new Date(t.completedAt).toLocaleDateString('es'):'—'}</td><td style="color:var(--green)">$${t.price||0}</td><td>${t.paymentMethod||'—'}</td><td><button class="btn btn-ghost btn-sm" onclick="openReceipt('${k}')">🧾 Recibo</button></td></tr>`).join('');
 }
 
-function tripStatusBadge(s){const map={assigned:'<span class="badge badge-blue">Asignado</span>',arrived:'<span class="badge badge-yellow">📍 En recogida</span>',started:'<span class="badge badge-yellow">🚗 En viaje</span>',in_progress:'<span class="badge badge-yellow">En curso</span>',completed:'<span class="badge badge-purple">Completado</span>',approved:'<span class="badge badge-green">Aprobado</span>',pending:'<span class="badge badge-gray">Pendiente</span>'};return map[s]||`<span class="badge badge-gray">${s}</span>`;}
+function tripStatusBadge(s){const map={assigned:'<span class="badge badge-blue">Asignado</span>',arrived:'<span class="badge badge-yellow">📍 En recogida</span>',started:'<span class="badge badge-yellow">🚗 En viaje</span>',in_progress:'<span class="badge badge-yellow">En curso</span>',completed:'<span class="badge badge-purple">Completado</span>',approved:'<span class="badge badge-green">Aprobado</span>',pending:'<span class="badge badge-gray">Pendiente</span>',cancelled:'<span class="badge badge-red">✕ Cancelado</span>',rejected:'<span class="badge badge-red">Rechazado</span>'};return map[s]||`<span class="badge badge-gray">${s}</span>`;}
 
 // ═══════════════════════════════════════════════════════
 // HISTORY
@@ -1139,6 +1139,15 @@ function renderPendingApprovals(){
 }
 async function registerPayment(){showToast('Pago registrado');}
 async function rejectTrip(k){if(confirm('¿Rechazar este servicio?')){await db.ref(`trips/${k}/status`).set('rejected');showToast('Servicio rechazado');}}
+
+async function cancelTrip(k){
+  const t=STATE.allTrips[k];if(!t)return;
+  const msg=t.driverName?`¿Cancelar viaje #${t.id||k.slice(-4)}?\nEl conductor ${t.driverName} será liberado.`:`¿Cancelar viaje #${t.id||k.slice(-4)}?`;
+  if(!confirm(msg))return;
+  await db.ref(`trips/${k}`).update({status:'cancelled',cancelledAt:Date.now()});
+  if(t.driverKey)await db.ref(`drivers/${t.driverKey}/status`).set('available');
+  showToast('Viaje cancelado');
+}
 
 // ═══════════════════════════════════════════════════════
 // APPROVE
