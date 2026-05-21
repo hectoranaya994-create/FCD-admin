@@ -1289,12 +1289,27 @@ function renderDriversPage(){
   container.innerHTML=drivers.map(([k,d])=>`<div class="driver-card"><div class="driver-avatar">${initials(d.name)}</div><div class="driver-info"><div class="driver-name">${d.name||k}</div><div class="driver-sub">${getVehicleStr(d)} · ${d.plate||'—'}</div></div>${d.location&&Date.now()-(d.location.updatedAt||0)<300000?'<span style="font-size:10px;color:var(--green)">📍 GPS</span>':''}${statusBadge(d.status||'available')}<button class="btn btn-ghost btn-sm" style="margin-left:8px" onclick="resetDriverPassword(\'${k}\',\'${(d.name||k).replace(/'/g,'')}\')">🔑 Reset</button></div>`).join('');
 }
 function openDriverModal(){document.getElementById('drv-modal-title').textContent='+ Nuevo Conductor';openModal('driver-modal');}
+let _resetDriverKey = null;
 async function resetDriverPassword(driverKey, driverName){
-  const newPass = prompt(`Nueva contraseña para ${driverName}:`);
-  if(!newPass||newPass.trim()==='')return;
-  if(newPass.trim().length < 4){showToast('Mínimo 4 caracteres','error');return;}
-  await db.ref(`drivers/${driverKey}`).update({password:newPass.trim(),passwordHash:null});
-  showToast(`✅ Contraseña de ${driverName} actualizada`);
+  _resetDriverKey = driverKey;
+  document.getElementById('reset-driver-name').textContent = driverName;
+  document.getElementById('reset-admin-auth').value = '';
+  document.getElementById('reset-new-pass').value = '';
+  document.getElementById('reset-confirm-pass').value = '';
+  openModal('reset-pass-modal');
+}
+async function confirmResetPassword(){
+  const adminAuth = document.getElementById('reset-admin-auth').value;
+  const newPass = document.getElementById('reset-new-pass').value.trim();
+  const confirmPass = document.getElementById('reset-confirm-pass').value.trim();
+  // Verificar clave admin
+  const hash = await sha256(adminAuth);
+  if(hash !== ADMIN_CREDENTIALS.passHash){showToast('Clave de admin incorrecta','error');return;}
+  if(!newPass||newPass.length<4){showToast('Mínimo 4 caracteres','error');return;}
+  if(newPass !== confirmPass){showToast('Las contraseñas no coinciden','error');return;}
+  await db.ref(`drivers/${_resetDriverKey}`).update({password:newPass, passwordHash:null});
+  closeModal('reset-pass-modal');
+  showToast(`✅ Contraseña actualizada correctamente`);
 }
 async function saveDriver(){
   const username=document.getElementById('drv-username').value.trim().toLowerCase();
@@ -1662,5 +1677,41 @@ document.addEventListener('click',e=>{if(!e.target.closest('#notif-btn')&&!e.tar
     </div>
   </div>
 </div>
+
+<!-- RESET PASSWORD MODAL -->
+<div class="modal-overlay" id="reset-pass-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">🔑 Restablecer contraseña</div>
+      <div class="modal-close" onclick="closeModal('reset-pass-modal')">×</div>
+    </div>
+    <div class="modal-body">
+      <div style="background:var(--bg3);border-radius:8px;padding:12px;margin-bottom:14px;font-size:13px">
+        <div><strong>Conductor:</strong> <span id="reset-driver-name">—</span></div>
+      </div>
+      <div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:8px;padding:10px;font-size:12.5px;color:#fcd34d;margin-bottom:14px">
+        ⚠️ Esta acción cambiará la contraseña del conductor. Comunícale la nueva contraseña.
+      </div>
+      <div class="form-group">
+        <label>Clave de autorización admin</label>
+        <input id="reset-admin-auth" type="password" placeholder="Ingresa tu clave de admin">
+      </div>
+      <div class="form-group">
+        <label>Nueva contraseña</label>
+        <input id="reset-new-pass" type="password" placeholder="Mínimo 4 caracteres">
+      </div>
+      <div class="form-group">
+        <label>Confirmar nueva contraseña</label>
+        <input id="reset-confirm-pass" type="password" placeholder="Repite la contraseña">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('reset-pass-modal')">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmResetPassword()">🔑 Confirmar cambio</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAkD6GOLCOKJkE0kkhhTfFRro9O-HONWg4&callback=initAdminMap" async defer></script>
 </body>
 </html>
