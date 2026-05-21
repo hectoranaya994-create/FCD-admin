@@ -1286,9 +1286,16 @@ function renderDriversPage(){
   const drivers=Object.entries(STATE.allDrivers);
   const container=document.getElementById('drivers-list');if(!container)return;
   if(drivers.length===0){container.innerHTML='<div class="empty-state"><div class="empty-icon">👤</div>Sin conductores registrados</div>';return;}
-  container.innerHTML=drivers.map(([k,d])=>`<div class="driver-card"><div class="driver-avatar">${initials(d.name)}</div><div class="driver-info"><div class="driver-name">${d.name||k}</div><div class="driver-sub">${getVehicleStr(d)} · ${d.plate||'—'}</div></div>${d.location&&Date.now()-(d.location.updatedAt||0)<300000?'<span style="font-size:10px;color:var(--green)">📍 GPS</span>':''}${statusBadge(d.status||'available')}</div>`).join('');
+  container.innerHTML=drivers.map(([k,d])=>`<div class="driver-card"><div class="driver-avatar">${initials(d.name)}</div><div class="driver-info"><div class="driver-name">${d.name||k}</div><div class="driver-sub">${getVehicleStr(d)} · ${d.plate||'—'}</div></div>${d.location&&Date.now()-(d.location.updatedAt||0)<300000?'<span style="font-size:10px;color:var(--green)">📍 GPS</span>':''}${statusBadge(d.status||'available')}<button class="btn btn-ghost btn-sm" style="margin-left:8px" onclick="resetDriverPassword(\'${k}\',\'${(d.name||k).replace(/'/g,'')}\')">🔑 Reset</button></div>`).join('');
 }
 function openDriverModal(){document.getElementById('drv-modal-title').textContent='+ Nuevo Conductor';openModal('driver-modal');}
+async function resetDriverPassword(driverKey, driverName){
+  const newPass = prompt(`Nueva contraseña para ${driverName}:`);
+  if(!newPass||newPass.trim()==='')return;
+  if(newPass.trim().length < 4){showToast('Mínimo 4 caracteres','error');return;}
+  await db.ref(`drivers/${driverKey}`).update({password:newPass.trim(),passwordHash:null});
+  showToast(`✅ Contraseña de ${driverName} actualizada`);
+}
 async function saveDriver(){
   const username=document.getElementById('drv-username').value.trim().toLowerCase();
   const password=document.getElementById('drv-password').value;
