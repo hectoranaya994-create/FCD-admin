@@ -44,6 +44,7 @@ html,body{min-height:100%;background:var(--bg);color:var(--text);font-family:"Se
 .service-card.selected .sc-name{color:var(--accent)}
 .sc-icon{font-size:28px;margin-bottom:6px}
 .sc-name{font-size:13px;font-weight:700;margin-bottom:2px}
+.sc-desc{font-size:11.5px;color:#8fa3c0;margin:3px 0;line-height:1.4}
 .sc-price{font-size:12px;color:var(--text3)}
 .btn-primary{width:100%;padding:15px;background:linear-gradient(135deg,var(--accent),#1d4ed8);color:#fff;border:none;border-radius:14px;font-size:16px;font-weight:700;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px}
 .btn-primary:active{transform:scale(.98)}
@@ -243,18 +244,28 @@ async function sha256(msg){
 }
 
 // Cargar servicios desde Firebase
-db.ref('catalog').once('value', snap => {
+db.ref('catalog').on('value', snap => {
   const catalog = snap.val();
-  if(catalog && Object.keys(catalog).length > 0) SERVICES = Object.values(catalog).filter(s=>s.active!==false);
+  if(catalog && Object.keys(catalog).length > 0){
+    SERVICES = Object.values(catalog)
+      .filter(s=>s.active!==false)
+      .sort((a,b)=>(a.price||0)-(b.price||0));
+  }
   renderServices();
 });
 
 function renderServices(){
   const grid = document.getElementById('service-grid');
+  if(!grid)return;
+  if(SERVICES.length===0){
+    grid.innerHTML='<div style="text-align:center;padding:32px;color:#6b7280;grid-column:1/-1;font-size:14px">⏳ Cargando servicios...</div>';
+    return;
+  }
   grid.innerHTML = SERVICES.map(s=>`
-    <div class="service-card" id="sc-${s.id||s.name}" onclick="selectService(${JSON.stringify(s).replace(/"/g,"'")})">
+    <div class="service-card" id="sc-${s.id||s.name}" onclick="selectService(${JSON.stringify(s).replace(/"/g,'\'')})">
       <div class="sc-icon">${s.icon||'🚗'}</div>
       <div class="sc-name">${s.name}</div>
+      ${s.description?`<div class="sc-desc">${s.description}</div>`:''}
       <div class="sc-price">desde $${s.price||0}</div>
     </div>
   `).join('');
