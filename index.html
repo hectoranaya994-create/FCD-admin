@@ -9,7 +9,7 @@
 <meta name="application-name" content="FCD Admin">
 <meta name="description" content="First Class Drive — Transportation Management System">
 <meta name="theme-color" content="#0a0c10">
-<title>First Class Drive — Admin Panel v66</title>
+<title>First Class Drive — Admin Panel v67</title>
 <style>
 :root{--bg:#0a0c10;--bg2:#111318;--bg3:#1a1d24;--bg4:#22262f;--border:#2a2e38;--border2:#363b47;--text:#e8eaf0;--text2:#9aa0b0;--text3:#636878;--accent:#3b82f6;--accent2:#60a5fa;--green:#22c55e;--green2:#16a34a;--red:#ef4444;--yellow:#f59e0b;--purple:#a855f7;--sidebar-w:220px;--header-h:56px}
 *{margin:0;padding:0;box-sizing:border-box}
@@ -216,7 +216,7 @@ select option{background:var(--bg3);color:var(--text)}
   <nav id="sidebar">
     <div class="sidebar-logo">
       <span>🚗 First Class Drive</span>
-      <span class="ver">v66</span>
+      <span class="ver">v67</span>
     </div>
     <div class="nav-section">Principal</div>
     <div class="nav-item active" onclick="showPage('dashboard')"><span>◈</span> Dashboard</div>
@@ -1161,15 +1161,18 @@ function openApprove(tripKey){
   const servicePrice=parseFloat((t.service||'').match(/\$(\d+)/)?.[1]||0);
   const waitCost=parseFloat(t.waitMinutes||0)*0.50;
   const total=servicePrice+(miles>0?milesCost:0)+waitCost;
-  document.getElementById('approve-body').innerHTML=`<div style="font-size:13px"><div style="background:var(--bg3);border-radius:8px;padding:12px;margin-bottom:14px"><div><strong>Cliente:</strong> ${t.clientName||'—'}</div><div><strong>Conductor:</strong> ${t.driverName||'—'}</div><div><strong>Servicio:</strong> ${t.service||'—'}</div><div><strong>Millas:</strong> ${miles}${t.gpsTracked?' 📍 GPS':''}</div><div><strong>Espera:</strong> ${t.waitMinutes||0} min</div></div><div style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;justify-content:space-between"><span style="color:var(--text2)">Precio servicio</span><span>$${servicePrice}</span></div>${miles>0?`<div style="display:flex;justify-content:space-between"><span style="color:var(--text2)">${miles} mi × $${ratePerMile}/mi</span><span>$${milesCost.toFixed(2)}</span></div>`:''}<div style="display:flex;justify-content:space-between"><span style="color:var(--text2)">Espera (${t.waitMinutes||0} min × $0.50)</span><span>$${waitCost.toFixed(2)}</span></div><div style="display:flex;justify-content:space-between;font-size:16px;font-weight:700;border-top:1px solid var(--border);padding-top:8px;margin-top:4px"><span>Total</span><span style="color:var(--green)">$${total.toFixed(2)}</span></div></div><div class="form-group" style="margin-top:14px"><label>Método de pago</label><select id="approve-payment-method"><option>Efectivo</option><option>Tarjeta</option><option>Zelle</option><option>Nequi</option><option>Daviplata</option></select></div></div>`;
+  document.getElementById('approve-body').innerHTML=`<div style="font-size:13px"><div style="background:var(--bg3);border-radius:8px;padding:12px;margin-bottom:14px"><div><strong>Cliente:</strong> ${t.clientName||'—'}</div><div><strong>Conductor:</strong> ${t.driverName||'—'}</div><div><strong>Servicio:</strong> ${t.service||'—'}</div><div style="font-size:11.5px;color:var(--text3);margin-top:4px">Edita los valores si necesitas ajustar</div></div><div style="display:flex;flex-direction:column;gap:10px"><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text2)">Precio servicio ($)</span><input id="approve-service-price" type="number" value="${servicePrice}" style="width:90px;text-align:right;padding:4px 8px;border-radius:6px;font-size:13px" oninput="recalcApprove()"></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text2)">Millas recorridas</span><input id="approve-miles" type="number" value="${miles}" style="width:90px;text-align:right;padding:4px 8px;border-radius:6px;font-size:13px" oninput="recalcApprove()"></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text2)">Espera (minutos)</span><input id="approve-wait" type="number" value="${t.waitMinutes||0}" style="width:90px;text-align:right;padding:4px 8px;border-radius:6px;font-size:13px" oninput="recalcApprove()"></div><div style="display:flex;justify-content:space-between;font-size:17px;font-weight:700;padding-top:8px"><span>Total</span><span id="approve-total-display" style="color:var(--green)">$${total.toFixed(2)}</span></div></div><div class="form-group" style="margin-top:14px"><label>Método de pago</label><select id="approve-payment-method"><option>Efectivo</option><option>Tarjeta</option><option>Zelle</option><option>Nequi</option><option>Daviplata</option></select></div></div>`;
   STATE._approveTotal=total.toFixed(2);
   openModal('approve-modal');
 }
 async function confirmApprove(){
   const k=STATE.approveTripKey;if(!k)return;
   const method=document.getElementById('approve-payment-method')?.value||'Efectivo';
-  await db.ref(`trips/${k}`).update({status:'approved',approvedAt:Date.now(),paymentMethod:method,price:STATE._approveTotal});
-  await db.ref(`drivers/${STATE.allTrips[k].driverKey}/status`).set('available');
+  const finalMiles=document.getElementById('approve-miles')?.value||STATE.allTrips[k]?.miles||'0';
+  const finalWait=parseFloat(document.getElementById('approve-wait')?.value||0);
+  await db.ref(`trips/${k}`).update({status:'approved',approvedAt:Date.now(),paymentMethod:method,price:STATE._approveTotal,miles:finalMiles,waitMinutes:finalWait});
+  const driverKey=STATE.allTrips[k]?.driverKey;
+  if(driverKey)await db.ref(`drivers/${driverKey}/status`).set('available');
   closeModal('approve-modal');
   showToast(`✅ Servicio aprobado — $${STATE._approveTotal}`);
 }
@@ -1269,7 +1272,7 @@ function renderClientsPage(){
   document.getElementById('cli-revenue').textContent=`$${revenue.toFixed(0)}`;
   const container=document.getElementById('clients-list');if(!container)return;
   if(clients.length===0){container.innerHTML='<div class="empty-state"><div class="empty-icon">👥</div>Sin clientes registrados</div>';return;}
-  container.innerHTML=clients.map(([k,c])=>`<div class="driver-card" onclick=""><div class="driver-avatar">${initials(c.name)}</div><div class="driver-info"><div class="driver-name">${c.name||'—'}</div><div class="driver-sub">${c.phone||'—'} · ${c.insurance||'Sin seguro'}</div></div></div>`).join('');
+  container.innerHTML=clients.map(([k,c])=>`<div class="driver-card"><div class="driver-avatar">${initials(c.name)}</div><div class="driver-info"><div class="driver-name">${c.name||'—'}</div><div class="driver-sub">${c.phone||'—'} · ${c.insurance||'Sin seguro'}</div></div><button class="btn btn-ghost btn-sm" onclick="editClient('${k}')">✏️ Editar</button></div>`).join('');
 }
 function openClientModal(){openModal('client-modal');}
 async function saveClient(){
@@ -1286,7 +1289,7 @@ function renderDriversPage(){
   const drivers=Object.entries(STATE.allDrivers);
   const container=document.getElementById('drivers-list');if(!container)return;
   if(drivers.length===0){container.innerHTML='<div class="empty-state"><div class="empty-icon">👤</div>Sin conductores registrados</div>';return;}
-  container.innerHTML=drivers.map(([k,d])=>`<div class="driver-card"><div class="driver-avatar">${initials(d.name)}</div><div class="driver-info"><div class="driver-name">${d.name||k}</div><div class="driver-sub">${getVehicleStr(d)} · ${d.plate||'—'}</div></div>${d.location&&Date.now()-(d.location.updatedAt||0)<300000?'<span style="font-size:10px;color:var(--green)">📍 GPS</span>':''}${statusBadge(d.status||'available')}<button class="btn btn-ghost btn-sm" style="margin-left:8px" onclick="resetDriverPassword(\'${k}\',\'${(d.name||k).replace(/'/g,'')}\')">🔑 Reset</button></div>`).join('');
+  container.innerHTML=drivers.map(([k,d])=>`<div class="driver-card"><div class="driver-avatar">${initials(d.name)}</div><div class="driver-info"><div class="driver-name">${d.name||k}</div><div class="driver-sub">${getVehicleStr(d)} · ${d.plate||'—'}</div></div>${d.location&&Date.now()-(d.location.updatedAt||0)<300000?'<span style="font-size:10px;color:var(--green)">📍 GPS</span>':''}${statusBadge(d.status||'available')}<button class="btn btn-ghost btn-sm" style="margin-left:6px" onclick="editDriver('${k}')">✏️ Editar</button><button class="btn btn-ghost btn-sm" style="margin-left:4px" onclick="resetDriverPassword(\'${k}\',\'${(d.name||k).replace(/'/g,'')}\')">🔑 Reset</button></div>`).join('');
 }
 function openDriverModal(){document.getElementById('drv-modal-title').textContent='+ Nuevo Conductor';openModal('driver-modal');}
 let _resetDriverKey = null;
@@ -1622,6 +1625,94 @@ function clearNotifs(){STATE.notifs=[];document.getElementById('notif-list').inn
 function initials(name){if(!name)return'?';const p=name.trim().split(' ');return(p[0][0]+(p[1]?p[1][0]:'')).toUpperCase();}
 let _toastTimer;
 function showToast(msg,type='success'){const t=document.getElementById('toast');t.textContent=msg;t.className=`toast show${type==='error'?' error':''}`;clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>t.classList.remove('show'),3500);}
+
+// ═══════════════════════════════════════════════════════
+// recalcApprove — recalcula total al editar campos
+// ═══════════════════════════════════════════════════════
+function recalcApprove(){
+  const sp=parseFloat(document.getElementById('approve-service-price')?.value)||0;
+  const mi=parseFloat(document.getElementById('approve-miles')?.value)||0;
+  const wa=parseFloat(document.getElementById('approve-wait')?.value)||0;
+  const rate=getRateForMiles(mi);
+  const total=(sp+(mi>0?mi*rate:0)+wa*0.50).toFixed(2);
+  STATE._approveTotal=total;
+  const el=document.getElementById('approve-total-display');
+  if(el)el.textContent=`$${total}`;
+}
+
+// ═══════════════════════════════════════════════════════
+// editDriver / saveDriverEdit
+// ═══════════════════════════════════════════════════════
+function editDriver(key){
+  const d=STATE.allDrivers[key];if(!d)return;
+  document.getElementById('drv-modal-title').textContent='✏️ Editar Conductor';
+  document.getElementById('drv-fullname').value=d.name||'';
+  document.getElementById('drv-phone').value=d.phone||'';
+  document.getElementById('drv-email').value=d.email||'';
+  document.getElementById('drv-license').value=d.license||'';
+  document.getElementById('drv-plate').value=d.plate||'';
+  const v=d.vehicle||{};
+  if(typeof v==='object'){
+    document.getElementById('drv-vtype').value=v.type||v.model||'Toyota Sienna';
+    document.getElementById('drv-vcolor').value=v.color||'';
+    document.getElementById('drv-vyear').value=v.year||'';
+  } else {
+    document.getElementById('drv-vtype').value=String(v)||'Toyota Sienna';
+    document.getElementById('drv-vcolor').value='';
+    document.getElementById('drv-vyear').value='';
+  }
+  document.getElementById('drv-username').value=key;
+  document.getElementById('drv-password').value='';
+  // Cambiar botón guardar a saveDriverEdit
+  const saveBtn=document.querySelector('#driver-modal .modal-footer .btn-primary');
+  if(saveBtn){saveBtn.setAttribute('onclick',`saveDriverEdit('${key}')`);saveBtn.textContent='✓ Guardar cambios';}
+  openModal('driver-modal');
+}
+async function saveDriverEdit(key){
+  const name=document.getElementById('drv-fullname').value.trim();
+  if(!name){showToast('Nombre requerido','error');return;}
+  const updates={name,phone:document.getElementById('drv-phone').value,email:document.getElementById('drv-email').value,license:document.getElementById('drv-license').value,plate:document.getElementById('drv-plate').value,vehicle:{type:document.getElementById('drv-vtype').value,color:document.getElementById('drv-vcolor').value,year:document.getElementById('drv-vyear').value},updatedAt:Date.now()};
+  const newPass=document.getElementById('drv-password').value;
+  if(newPass&&newPass.length>=4){const h=await sha256(newPass);updates.passwordHash=h;}
+  await db.ref(`drivers/${key}`).update(updates);
+  // Restaurar botón
+  const saveBtn=document.querySelector('#driver-modal .modal-footer .btn-primary');
+  if(saveBtn){saveBtn.setAttribute('onclick','saveDriver()');saveBtn.textContent='✓ Guardar conductor';}
+  closeModal('driver-modal');
+  showToast(`✅ Conductor ${name} actualizado`);
+}
+
+// ═══════════════════════════════════════════════════════
+// editClient / saveClientEdit
+// ═══════════════════════════════════════════════════════
+function editClient(key){
+  const c=STATE.allClients[key];if(!c)return;
+  // Reusar modal de cliente con título diferente
+  document.querySelector('#client-modal .modal-title').textContent='✏️ Editar Cliente';
+  document.getElementById('cli-name').value=c.name||'';
+  document.getElementById('cli-phone').value=c.phone||'';
+  document.getElementById('cli-email').value=c.email||'';
+  document.getElementById('cli-addr').value=c.address||'';
+  document.getElementById('cli-insurance').value=c.insurance||'';
+  document.getElementById('cli-policy').value=c.policy||'';
+  document.getElementById('cli-notes').value=c.notes||'';
+  // Cambiar botón guardar a saveClientEdit
+  const saveBtn=document.querySelector('#client-modal .modal-footer .btn-primary');
+  if(saveBtn)saveBtn.setAttribute('onclick',`saveClientEdit('${key}')`);
+  openModal('client-modal');
+}
+async function saveClientEdit(key){
+  const name=document.getElementById('cli-name').value.trim();
+  if(!name){showToast('Nombre requerido','error');return;}
+  await db.ref(`clients/${key}`).update({name,phone:document.getElementById('cli-phone').value,email:document.getElementById('cli-email').value,address:document.getElementById('cli-addr').value,insurance:document.getElementById('cli-insurance').value,policy:document.getElementById('cli-policy').value,notes:document.getElementById('cli-notes').value,updatedAt:Date.now()});
+  // Restaurar modal
+  document.querySelector('#client-modal .modal-title').textContent='+ Nuevo Cliente';
+  const saveBtn=document.querySelector('#client-modal .modal-footer .btn-primary');
+  if(saveBtn)saveBtn.setAttribute('onclick','saveClient()');
+  closeModal('client-modal');
+  showToast(`✅ Cliente ${name} actualizado`);
+}
+
 document.addEventListener('click',e=>{if(!e.target.closest('#notif-btn')&&!e.target.closest('#notif-panel'))document.getElementById('notif-panel').classList.remove('show');});
 </script>
 
