@@ -1272,7 +1272,7 @@ function renderClientsPage(){
   document.getElementById('cli-revenue').textContent=`$${revenue.toFixed(0)}`;
   const container=document.getElementById('clients-list');if(!container)return;
   if(clients.length===0){container.innerHTML='<div class="empty-state"><div class="empty-icon">👥</div>Sin clientes registrados</div>';return;}
-  container.innerHTML=clients.map(([k,c])=>`<div class="driver-card"><div class="driver-avatar">${initials(c.name)}</div><div class="driver-info"><div class="driver-name">${c.name||'—'}</div><div class="driver-sub">${c.phone||'—'} · ${c.insurance||'Sin seguro'}</div></div><button class="btn btn-ghost btn-sm" onclick="editClient('${k}')">✏️ Editar</button></div>`).join('');
+  container.innerHTML=clients.map(([k,c])=>`<div class="driver-card" style="flex-direction:column;align-items:flex-start;gap:8px;cursor:default"><div style="display:flex;align-items:center;gap:10px;width:100%"><div class="driver-avatar">${initials(c.name)}</div><div class="driver-info"><div class="driver-name">${c.name||'—'}</div><div class="driver-sub">${c.phone||'—'} · ${c.insurance||'Sin seguro'}</div></div></div><div style="display:flex;align-items:center;gap:6px;width:100%"><span style="flex:1"></span><button class="btn btn-ghost btn-sm" onclick="editClient('${k}')">✏️ Editar</button></div></div>`).join('');
 }
 function openClientModal(){openModal('client-modal');}
 async function saveClient(){
@@ -1289,7 +1289,7 @@ function renderDriversPage(){
   const drivers=Object.entries(STATE.allDrivers);
   const container=document.getElementById('drivers-list');if(!container)return;
   if(drivers.length===0){container.innerHTML='<div class="empty-state"><div class="empty-icon">👤</div>Sin conductores registrados</div>';return;}
-  container.innerHTML=drivers.map(([k,d])=>`<div class="driver-card"><div class="driver-avatar">${initials(d.name)}</div><div class="driver-info"><div class="driver-name">${d.name||k}</div><div class="driver-sub">${getVehicleStr(d)} · ${d.plate||'—'}</div></div>${d.location&&Date.now()-(d.location.updatedAt||0)<300000?'<span style="font-size:10px;color:var(--green)">📍 GPS</span>':''}${statusBadge(d.status||'available')}<button class="btn btn-ghost btn-sm" style="margin-left:6px" onclick="editDriver('${k}')">✏️ Editar</button><button class="btn btn-ghost btn-sm" style="margin-left:4px" onclick="resetDriverPassword(\'${k}\',\'${(d.name||k).replace(/'/g,'')}\')">🔑 Reset</button></div>`).join('');
+  container.innerHTML=drivers.map(([k,d])=>`<div class="driver-card" style="flex-direction:column;align-items:flex-start;gap:8px;cursor:default"><div style="display:flex;align-items:center;gap:10px;width:100%"><div class="driver-avatar">${initials(d.name)}</div><div class="driver-info"><div class="driver-name">${d.name||k}</div><div class="driver-sub">${getVehicleStr(d)} · ${d.plate||'—'}</div></div>${d.location&&Date.now()-(d.location.updatedAt||0)<300000?'<span style="font-size:10px;color:var(--green);margin-left:auto">📍</span>':''}</div><div style="display:flex;align-items:center;gap:6px;width:100%">${statusBadge(d.status||'available')}<span style="flex:1"></span><button class="btn btn-ghost btn-sm" onclick="editDriver('${k}')">✏️ Editar</button><button class="btn btn-ghost btn-sm" onclick="resetDriverPassword('${k}','${(d.name||k).replace(/'/g,'')}')" >🔑 Reset</button></div></div>`).join('');
 }
 function openDriverModal(){document.getElementById('drv-modal-title').textContent='+ Nuevo Conductor';openModal('driver-modal');}
 let _resetDriverKey = null;
