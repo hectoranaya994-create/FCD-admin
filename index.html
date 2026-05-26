@@ -1150,14 +1150,51 @@ function openApprove(tripKey){
   STATE.approveTripKey=tripKey;
   const miles=parseFloat(t.miles)||0;
   const ratePerMile=getRateForMiles(miles);
-  const milesCost=miles*ratePerMile;
   const servicePrice=parseFloat((t.service||'').match(/\$(\d+)/)?.[1]||0);
-  const waitCost=parseFloat(t.waitMinutes||0)*0.50;
-  const total=servicePrice+(miles>0?milesCost:0)+waitCost;
-  document.getElementById('approve-body').innerHTML=`<div style="font-size:13px"><div style="background:var(--bg3);border-radius:8px;padding:12px;margin-bottom:14px"><div><strong>Cliente:</strong> ${t.clientName||'—'}</div><div><strong>Conductor:</strong> ${t.driverName||'—'}</div><div><strong>Servicio:</strong> ${t.service||'—'}</div><div style="font-size:11.5px;color:var(--text3);margin-top:4px">Edita los valores si necesitas ajustar</div></div><div style="display:flex;flex-direction:column;gap:10px"><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text2)">Precio servicio ($)</span><input id="approve-service-price" type="number" value="${servicePrice}" style="width:90px;text-align:right;padding:4px 8px;border-radius:6px;font-size:13px" oninput="recalcApprove()"></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text2)">Millas recorridas</span><input id="approve-miles" type="number" value="${miles}" style="width:90px;text-align:right;padding:4px 8px;border-radius:6px;font-size:13px" oninput="recalcApprove()"></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text2)">Espera (minutos)</span><input id="approve-wait" type="number" value="${t.waitMinutes||0}" style="width:90px;text-align:right;padding:4px 8px;border-radius:6px;font-size:13px" oninput="recalcApprove()"></div><div style="display:flex;justify-content:space-between;font-size:17px;font-weight:700;padding-top:8px"><span>Total</span><span id="approve-total-display" style="color:var(--green)">$${total.toFixed(2)}</span></div></div><div class="form-group" style="margin-top:14px"><label>Método de pago</label><select id="approve-payment-method"><option>Efectivo</option><option>Tarjeta</option><option>Zelle</option><option>Nequi</option><option>Daviplata</option></select></div></div>`;
-  STATE._approveTotal=total.toFixed(2);
+  const banderazo=3.50;
+  const waitMin=parseFloat(t.waitMinutes||0);
+  document.getElementById('approve-body').innerHTML=`
+    <div style="font-size:13px">
+      <div style="background:var(--bg3);border-radius:8px;padding:12px;margin-bottom:14px">
+        <div><strong>Cliente:</strong> ${t.clientName||'—'}</div>
+        <div><strong>Conductor:</strong> ${t.driverName||'—'}</div>
+        <div><strong>Servicio:</strong> ${t.service||'—'}</div>
+        <div style="font-size:11.5px;color:var(--text3);margin-top:4px">Edita los valores si necesitas ajustar</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">
+          <span style="color:var(--text2)">Precio servicio ($)</span>
+          <input id="approve-service-price" type="number" value="${servicePrice}" style="width:90px;text-align:right;padding:4px 8px;border-radius:6px;font-size:13px;background:var(--bg3);border:1px solid var(--border2);color:var(--text)" oninput="recalcApprove()">
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">
+          <span style="color:var(--text2)">Banderazo ($)</span>
+          <input id="approve-banderazo" type="number" value="${banderazo}" style="width:90px;text-align:right;padding:4px 8px;border-radius:6px;font-size:13px;background:var(--bg3);border:1px solid var(--border2);color:var(--text)" oninput="recalcApprove()">
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">
+          <span style="color:var(--text2)">Millas recorridas</span>
+          <input id="approve-miles" type="number" value="${miles}" style="width:90px;text-align:right;padding:4px 8px;border-radius:6px;font-size:13px;background:var(--bg3);border:1px solid var(--border2);color:var(--text)" oninput="recalcApprove()">
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">
+          <span style="color:var(--text2)">Tarifa por milla ($/mi)</span>
+          <input id="approve-rate" type="number" value="${ratePerMile}" style="width:90px;text-align:right;padding:4px 8px;border-radius:6px;font-size:13px;background:var(--bg3);border:1px solid var(--border2);color:var(--text)" oninput="recalcApprove()">
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">
+          <span style="color:var(--text2)">Espera (minutos)</span>
+          <input id="approve-wait" type="number" value="${waitMin}" style="width:90px;text-align:right;padding:4px 8px;border-radius:6px;font-size:13px;background:var(--bg3);border:1px solid var(--border2);color:var(--text)" oninput="recalcApprove()">
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:17px;font-weight:700;padding-top:8px">
+          <span>Total</span>
+          <span id="approve-total-display" style="color:var(--green)">$0.00</span>
+        </div>
+      </div>
+      <div class="form-group" style="margin-top:14px">
+        <label>Método de pago</label>
+        <select id="approve-payment-method" style="background:var(--bg3);border:1px solid var(--border2);color:var(--text)">
+          <option>Efectivo</option><option>Tarjeta</option><option>Zelle</option><option>Nequi</option><option>Daviplata</option>
+        </select>
+      </div>
+    </div>`;
   openModal('approve-modal');
-  // Recalcular con los inputs ya en el DOM para sincronizar STATE._approveTotal
   setTimeout(recalcApprove, 0);
 }
 async function confirmApprove(){
@@ -1165,7 +1202,9 @@ async function confirmApprove(){
   const method=document.getElementById('approve-payment-method')?.value||'Efectivo';
   const finalMiles=document.getElementById('approve-miles')?.value||STATE.allTrips[k]?.miles||'0';
   const finalWait=parseFloat(document.getElementById('approve-wait')?.value||0);
-  await db.ref(`trips/${k}`).update({status:'approved',approvedAt:Date.now(),paymentMethod:method,price:STATE._approveTotal,miles:finalMiles,waitMinutes:finalWait});
+  const finalBanderazo=parseFloat(document.getElementById('approve-banderazo')?.value||0);
+  const finalRate=parseFloat(document.getElementById('approve-rate')?.value||0);
+  await db.ref(`trips/${k}`).update({status:'approved',approvedAt:Date.now(),paymentMethod:method,price:STATE._approveTotal,miles:finalMiles,waitMinutes:finalWait,banderazo:finalBanderazo,ratePerMile:finalRate});
   const driverKey=STATE.allTrips[k]?.driverKey;
   if(driverKey)await db.ref(`drivers/${driverKey}/status`).set('available');
   closeModal('approve-modal');
@@ -1627,10 +1666,11 @@ function showToast(msg,type='success'){const t=document.getElementById('toast');
 // ═══════════════════════════════════════════════════════
 function recalcApprove(){
   const sp=parseFloat(document.getElementById('approve-service-price')?.value)||0;
+  const bz=parseFloat(document.getElementById('approve-banderazo')?.value)||0;
   const mi=parseFloat(document.getElementById('approve-miles')?.value)||0;
+  const rate=parseFloat(document.getElementById('approve-rate')?.value)||getRateForMiles(mi);
   const wa=parseFloat(document.getElementById('approve-wait')?.value)||0;
-  const rate=getRateForMiles(mi);
-  const total=(sp+(mi>0?mi*rate:0)+wa*0.50).toFixed(2);
+  const total=(sp+bz+(mi>0?mi*rate:0)+wa*0.50).toFixed(2);
   STATE._approveTotal=total;
   const el=document.getElementById('approve-total-display');
   if(el)el.textContent=`$${total}`;
