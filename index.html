@@ -1169,7 +1169,12 @@ function openApprove(tripKey){
   const ratePerMile=getRateForMiles(miles);
   // Buscar precio en catálogo primero, luego en el nombre del servicio
   let servicePrice=0;
-  const catalogMatch=Object.values(allCatalogServices).find(s=>s.name&&t.service&&t.service.includes(s.name));
+  const svcNorm=(t.service||'').toLowerCase().trim();
+  const catalogMatch=Object.values(allCatalogServices).find(s=>s.name&&(
+    svcNorm===s.name.toLowerCase().trim()||
+    svcNorm.includes(s.name.toLowerCase().trim())||
+    s.name.toLowerCase().trim().includes(svcNorm.split('—')[0].trim().toLowerCase())
+  ));
   if(catalogMatch) servicePrice=parseFloat(catalogMatch.price)||0;
   else servicePrice=parseFloat((t.service||'').match(/\$(\d+)/)?.[1]||0);
   const banderazo=DEFAULT_BANDERAZO||3.50;
