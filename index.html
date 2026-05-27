@@ -1480,6 +1480,7 @@ let reassignTripKey = null;
 function openReassign(tripKey) {
   const t = STATE.allTrips[tripKey];
   if (!t) return;
+  if(!confirm(`¿Reasignar el viaje #${t.id||tripKey.slice(-4)} de ${t.clientName||'este cliente'}?`)) return;
   reassignTripKey = tripKey;
   document.getElementById('reassign-trip-id').textContent = `#${t.id || tripKey.slice(-4)}`;
   document.getElementById('reassign-client').textContent = t.clientName || '—';
