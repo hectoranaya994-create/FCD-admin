@@ -308,7 +308,7 @@ select option{background:var(--bg3);color:var(--text)}
           <div class="tab" onclick="switchTab(this,'trips-pending')">Pendientes</div>
           <div class="tab" onclick="switchTab(this,'trips-completed')">Completados</div>
         </div>
-        <div id="trips-active"><div class="table-wrap"><table><thead><tr><th>ID</th><th>Cliente</th><th>Hora</th><th>Origen</th><th>Conductor</th><th>Estado</th><th>USD</th><th>Acciones</th></tr></thead><tbody id="trips-active-body"></tbody></table></div></div>
+        <div id="trips-active"><div class="table-wrap"><table><thead><tr><th>ID</th><th>Cliente</th><th>Hora</th><th>Origen</th><th>Destino</th><th>Conductor</th><th>Estado</th><th>Acciones</th></tr></thead><tbody id="trips-active-body"></tbody></table></div></div>
         <div id="trips-pending" style="display:none"><div class="table-wrap"><table><thead><tr><th>ID</th><th>Cliente</th><th>Fecha/Hora</th><th>Servicio</th><th>Estado</th><th>Acciones</th></tr></thead><tbody id="trips-pending-body"></tbody></table></div></div>
         <div id="trips-completed" style="display:none"><div class="table-wrap"><table><thead><tr><th>ID</th><th>Cliente</th><th>Conductor</th><th>Fecha</th><th>USD</th><th>Pago</th><th>Recibo</th></tr></thead><tbody id="trips-completed-body"></tbody></table></div></div>
       </div>
@@ -666,11 +666,19 @@ select option{background:var(--bg3);color:var(--text)}
   <div class="modal">
     <div class="modal-header"><div class="modal-title">🚗 Assign Driver</div><div class="modal-close" onclick="closeModal('assign-modal')">×</div></div>
     <div class="modal-body">
-      <div style="background:var(--bg3);border-radius:8px;padding:12px;margin-bottom:14px;font-size:13px">
+      <div style="background:var(--bg3);border-radius:8px;padding:12px;margin-bottom:14px;font-size:13px;display:flex;flex-direction:column;gap:5px">
         <div><strong>Viaje:</strong> <span id="assign-trip-id">—</span></div>
         <div><strong>Cliente:</strong> <span id="assign-client">—</span></div>
         <div><strong>Servicio:</strong> <span id="assign-service">—</span></div>
         <div><strong>Hora:</strong> <span id="assign-time">—</span></div>
+        <div style="margin-top:4px;padding-top:8px;border-top:1px solid var(--border)">
+          <div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:4px">
+            <span>🟢</span><span style="color:var(--text2)">Recogida:</span> <span id="assign-origin" style="font-weight:600">—</span>
+          </div>
+          <div style="display:flex;align-items:flex-start;gap:6px">
+            <span>🔴</span><span style="color:var(--text2)">Destino:</span> <span id="assign-dest" style="font-weight:600">—</span>
+          </div>
+        </div>
       </div>
       <div class="form-group"><label>Seleccionar conductor</label><select id="assign-driver-sel"><option>Cargando...</option></select></div>
       <div class="form-group"><label>Nota para el conductor (opcional)</label><textarea id="assign-note" rows="2" placeholder="Instrucciones especiales..."></textarea></div>
@@ -1069,7 +1077,7 @@ function renderTripsPage(){
   const completed=entries.filter(([k,t])=>['completed','approved'].includes(t.status));
   const ab=document.getElementById('trips-active-body');
   if(active.length===0){ab.innerHTML=`<tr><td colspan="8" class="empty-state">Sin viajes activos</td></tr>`;}
-  else ab.innerHTML=active.map(([k,t])=>`<tr><td><strong>#${t.id||k.slice(-4)}</strong></td><td>${t.clientName||'—'}</td><td style="font-size:11.5px;color:var(--accent2);white-space:nowrap">${t.datetime?new Date(t.datetime).toLocaleString('es',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):(t.createdAt?new Date(t.createdAt).toLocaleString('es',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):' — ')}</td><td>${(t.origin||'—').substring(0,16)}</td><td>${(t.destination||'—').substring(0,20)}</td><td>${t.driverName||'—'}</td><td>${tripStatusBadge(t.status)}</td><td style="color:var(--green)">$${t.price||0}</td><td style="display:flex;gap:4px"><button class="btn btn-ghost btn-sm" onclick="openUpdateTrip('${k}')">Ver</button><button class="btn btn-primary btn-sm" onclick="openReassign('${k}')">🔄 Reasignar</button><button class="btn btn-red btn-sm" onclick="cancelTrip('${k}')">✕ Cancelar</button></td></tr>`).join('');
+  else ab.innerHTML=active.map(([k,t])=>`<tr><td><strong>#${t.id||k.slice(-4)}</strong></td><td>${t.clientName||'—'}</td><td style="font-size:11.5px;color:var(--accent2);white-space:nowrap">${t.datetime?new Date(t.datetime).toLocaleString('es',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):(t.createdAt?new Date(t.createdAt).toLocaleString('es',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):' — ')}</td><td>${(t.origin||'—').substring(0,16)}</td><td>${(t.destination||'—').substring(0,16)}</td><td>${t.driverName||'—'}</td><td>${tripStatusBadge(t.status)}</td><td style="display:flex;gap:4px"><button class="btn btn-ghost btn-sm" onclick="openUpdateTrip('${k}')">Ver</button><button class="btn btn-primary btn-sm" onclick="openReassign('${k}')">🔄 Reasignar</button><button class="btn btn-red btn-sm" onclick="cancelTrip('${k}')">✕ Cancelar</button></td></tr>`).join('');
   const pb=document.getElementById('trips-pending-body');
   if(pending.length===0){pb.innerHTML=`<tr><td colspan="6" class="empty-state">Sin viajes pendientes</td></tr>`;}
   else pb.innerHTML=pending.map(([k,t])=>`<tr><td><strong>#${t.id||k.slice(-4)}</strong></td><td>${t.clientName||'—'}</td><td>${t.datetime?new Date(t.datetime).toLocaleString('es',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):(t.createdAt?new Date(t.createdAt).toLocaleString('es',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):' — ')}</td><td>${t.service||'—'}</td><td><span class="badge badge-yellow">⏳ Pendiente</span></td><td style="display:flex;gap:4px"><button class="btn btn-primary btn-sm" onclick="openAssign('${k}')">🚗 Asignar</button>${t.driverKey?`<button class="btn btn-ghost btn-sm" onclick="openReassign('${k}')">🔄 Reasignar</button>`:''}<button class="btn btn-red btn-sm" onclick="cancelTrip('${k}')">✕ Cancelar</button></td></tr>`).join('');
@@ -1221,6 +1229,8 @@ function openAssign(tripKey){
   document.getElementById('assign-client').textContent=t.clientName||'—';
   document.getElementById('assign-service').textContent=t.service||'—';
   document.getElementById('assign-time').textContent=t.datetime?new Date(t.datetime).toLocaleString('es'):'—';
+  document.getElementById('assign-origin').textContent=t.origin||'—';
+  document.getElementById('assign-dest').textContent=t.destination||'—';
   populateDriverSelects();
   openModal('assign-modal');
 }
