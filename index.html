@@ -1167,16 +1167,21 @@ function openApprove(tripKey){
   STATE.approveTripKey=tripKey;
   const miles=parseFloat(t.miles)||0;
   const ratePerMile=getRateForMiles(miles);
-  // Buscar precio en catálogo primero, luego en el nombre del servicio
+  // Buscar precio: 1) en el nombre del servicio, 2) en el catálogo
   let servicePrice=0;
-  const svcNorm=(t.service||'').toLowerCase().trim();
-  const catalogMatch=Object.values(allCatalogServices).find(s=>s.name&&(
-    svcNorm===s.name.toLowerCase().trim()||
-    svcNorm.includes(s.name.toLowerCase().trim())||
-    s.name.toLowerCase().trim().includes(svcNorm.split('—')[0].trim().toLowerCase())
-  ));
-  if(catalogMatch) servicePrice=parseFloat(catalogMatch.price)||0;
-  else servicePrice=parseFloat((t.service||'').match(/\$(\d+)/)?.[1]||0);
+  const priceInName=parseFloat((t.service||'').match(/\$([\d.]+)/)?.[1]||0);
+  if(priceInName>0){
+    servicePrice=priceInName;
+  } else {
+    const svcNorm=(t.service||'').toLowerCase().trim();
+    const svcBase=svcNorm.split(/[—\-]/)[0].trim();
+    const catalogMatch=Object.values(allCatalogServices).find(s=>s.name&&(
+      svcNorm===s.name.toLowerCase().trim()||
+      svcBase===s.name.toLowerCase().trim()||
+      s.name.toLowerCase().trim().includes(svcBase)
+    ));
+    if(catalogMatch) servicePrice=parseFloat(catalogMatch.price)||0;
+  }
   const banderazo=DEFAULT_BANDERAZO||3.50;
   const waitMin=parseFloat(t.waitMinutes||0);
   document.getElementById('approve-body').innerHTML=`
