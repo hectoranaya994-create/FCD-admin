@@ -656,6 +656,16 @@ select option{background:var(--bg3);color:var(--text)}
       </div>
       <div class="form-group"><label>Fecha y hora</label><input id="nt-datetime" type="datetime-local"></div>
       <div class="form-group"><label>Nota para el conductor</label><textarea id="nt-note" rows="2" placeholder="Instrucciones especiales..."></textarea></div>
+      <div style="background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.2);border-radius:10px;padding:12px;margin-top:8px">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:600;color:var(--text2);margin-bottom:0">
+          <input type="checkbox" id="nt-roundtrip" style="width:auto" onchange="toggleRoundTrip()"> 🔄 ¿Incluye viaje de regreso?
+        </label>
+        <div id="roundtrip-fields" style="display:none;margin-top:12px;display:none;flex-direction:column;gap:10px">
+          <div class="form-group" style="margin-bottom:0"><label>Fecha y hora de regreso</label><input id="nt-return-datetime" type="datetime-local"></div>
+          <div class="form-group" style="margin-bottom:0"><label>Conductor de regreso (opcional)</label><select id="nt-return-driver"><option value="">— Asignar después —</option></select></div>
+          <div class="form-group" style="margin-bottom:0"><label>Nota para el conductor de regreso</label><textarea id="nt-return-note" rows="2" placeholder="Instrucciones para el regreso..."></textarea></div>
+        </div>
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('new-trip-modal')">Cancelar</button>
@@ -1086,7 +1096,7 @@ function renderTripsPage(){
   const completed=entries.filter(([k,t])=>['completed','approved'].includes(t.status));
   const ab=document.getElementById('trips-active-body');
   if(active.length===0){ab.innerHTML=`<tr><td colspan="8" class="empty-state">Sin viajes activos</td></tr>`;}
-  else ab.innerHTML=active.map(([k,t])=>`<tr><td><strong>#${t.id||k.slice(-4)}</strong></td><td>${t.clientName||'—'}</td><td style="font-size:11.5px;color:var(--accent2);white-space:nowrap">${t.datetime?new Date(t.datetime).toLocaleString('es',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):(t.createdAt?new Date(t.createdAt).toLocaleString('es',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):' — ')}</td><td>${(t.origin||'—').substring(0,16)}</td><td>${(t.destination||'—').substring(0,16)}</td><td>${t.driverName||'—'}</td><td>${tripStatusBadge(t.status)}</td><td style="display:flex;gap:4px"><button class="btn btn-ghost btn-sm" onclick="openUpdateTrip('${k}')">Ver</button><button class="btn btn-primary btn-sm" onclick="openReassign('${k}')">🔄 Reasignar</button><button class="btn btn-red btn-sm" onclick="cancelTrip('${k}')">✕ Cancelar</button></td></tr>`).join('');
+  else ab.innerHTML=active.map(([k,t])=>`<tr><td><strong>#${t.id||k.slice(-4)}</strong>${t.tripType==='vuelta'?'<span class="badge badge-purple" style="font-size:10px;margin-left:4px">🔄 Vuelta</span>':t.tripType==='ida'&&t.isRoundTrip?'<span class="badge badge-blue" style="font-size:10px;margin-left:4px">→ Ida</span>':''}</td><td>${t.clientName||'—'}</td><td style="font-size:11.5px;color:var(--accent2);white-space:nowrap">${t.datetime?new Date(t.datetime).toLocaleString('es',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):(t.createdAt?new Date(t.createdAt).toLocaleString('es',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):' — ')}</td><td>${(t.origin||'—').substring(0,16)}</td><td>${(t.destination||'—').substring(0,16)}</td><td>${t.driverName||'—'}</td><td>${tripStatusBadge(t.status)}</td><td style="display:flex;gap:4px"><button class="btn btn-ghost btn-sm" onclick="openUpdateTrip('${k}')">Ver</button><button class="btn btn-primary btn-sm" onclick="openReassign('${k}')">🔄 Reasignar</button><button class="btn btn-red btn-sm" onclick="cancelTrip('${k}')">✕ Cancelar</button></td></tr>`).join('');
   const pb=document.getElementById('trips-pending-body');
   if(pending.length===0){pb.innerHTML=`<tr><td colspan="6" class="empty-state">Sin viajes pendientes</td></tr>`;}
   else pb.innerHTML=pending.map(([k,t])=>`<tr><td><strong>#${t.id||k.slice(-4)}</strong></td><td>${t.clientName||'—'}</td><td>${t.datetime?new Date(t.datetime).toLocaleString('es',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):(t.createdAt?new Date(t.createdAt).toLocaleString('es',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):' — ')}</td><td>${t.service||'—'}</td><td><span class="badge badge-yellow">⏳ Pendiente</span></td><td style="display:flex;gap:4px"><button class="btn btn-primary btn-sm" onclick="openAssign('${k}')">🚗 Asignar</button>${t.driverKey?`<button class="btn btn-ghost btn-sm" onclick="openReassign('${k}')">🔄 Reasignar</button>`:''}<button class="btn btn-red btn-sm" onclick="cancelTrip('${k}')">✕ Cancelar</button></td></tr>`).join('');
@@ -1279,6 +1289,17 @@ function populateDriverSelects(){
 // NEW TRIP
 // ═══════════════════════════════════════════════════════
 let _tripCounter = 100;
+function toggleRoundTrip(){
+  const checked=document.getElementById('nt-roundtrip').checked;
+  const fields=document.getElementById('roundtrip-fields');
+  fields.style.display=checked?'flex':'none';
+  // Poblar select de conductor de regreso
+  if(checked){
+    const sel=document.getElementById('nt-return-driver');
+    const drivers=Object.entries(STATE.allDrivers);
+    sel.innerHTML='<option value="">— Asignar después —</option>'+drivers.map(([k,d])=>`<option value="${k}">${d.name||k}</option>`).join('');
+  }
+}
 async function saveNewTrip(){
   const client=document.getElementById('nt-client').value.trim();
   const phone=document.getElementById('nt-phone').value.trim();
@@ -1287,15 +1308,40 @@ async function saveNewTrip(){
   const service=document.getElementById('nt-service').value;
   const datetime=document.getElementById('nt-datetime').value;
   const note=document.getElementById('nt-note').value;
+  const isRoundTrip=document.getElementById('nt-roundtrip').checked;
   if(!client||!origin||!dest){showToast('Completa los campos requeridos','error');return;}
   const snap=await db.ref('trips').get();
   let maxId=266;
   snap.forEach(c=>{const v=c.val();if(v&&v.id){const n=parseInt(v.id);if(!isNaN(n)&&n>maxId)maxId=n;}});
   const newId=(maxId+1).toString().padStart(4,'0');
-  await db.ref('trips').push({id:newId,clientName:client,clientPhone:phone,origin,destination:dest,service,datetime,note,adminNote:note,status:'pending',createdAt:Date.now(),source:'admin'});
+  // Crear viaje de ida
+  await db.ref('trips').push({id:newId,clientName:client,clientPhone:phone,origin,destination:dest,service,datetime,note,adminNote:note,status:'pending',createdAt:Date.now(),source:'admin',isRoundTrip:isRoundTrip,tripType:'ida'});
+  // Si incluye regreso, crear viaje de vuelta ligado
+  if(isRoundTrip){
+    const returnId=(maxId+2).toString().padStart(4,'0');
+    const returnDatetime=document.getElementById('nt-return-datetime').value;
+    const returnNote=document.getElementById('nt-return-note').value;
+    const returnDriverKey=document.getElementById('nt-return-driver').value;
+    const returnDriverName=returnDriverKey?STATE.allDrivers[returnDriverKey]?.name||returnDriverKey:'';
+    const returnData={
+      id:returnId,clientName:client,clientPhone:phone,
+      origin:dest,destination:origin, // invertido
+      service,datetime:returnDatetime,note:returnNote,adminNote:returnNote,
+      status:returnDriverKey?'assigned':'pending',
+      createdAt:Date.now(),source:'admin',
+      isRoundTrip:true,tripType:'vuelta',linkedTripId:newId,
+    };
+    if(returnDriverKey){returnData.driverKey=returnDriverKey;returnData.driverName=returnDriverName;}
+    await db.ref('trips').push(returnData);
+    if(returnDriverKey) await db.ref(`drivers/${returnDriverKey}/status`).set('busy');
+    showToast(`✅ Viaje #${newId} (ida) + #${returnId} (vuelta) agendados`);
+  } else {
+    showToast(`✅ Viaje #${newId} agendado`);
+  }
   closeModal('new-trip-modal');
   document.getElementById('nt-client').value='';document.getElementById('nt-phone').value='';document.getElementById('nt-origin').value='';document.getElementById('nt-dest').value='';document.getElementById('nt-note').value='';
-  showToast(`✅ Viaje #${newId} agendado`);
+  document.getElementById('nt-roundtrip').checked=false;
+  document.getElementById('roundtrip-fields').style.display='none';
   showPage('trips');
 }
 function openNewTrip(){openModal('new-trip-modal');}
