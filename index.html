@@ -1092,7 +1092,7 @@ function updateTripsBadge(){const pending=Object.values(STATE.allTrips).filter(t
 function renderTripsPage(){
   const entries=Object.entries(STATE.allTrips);
   const active=entries.filter(([k,t])=>['assigned','onway','arrived','started','in_progress'].includes(t.status));
-  const pending=entries.filter(([k,t])=>t.status==='pending'||!t.driverKey);
+  const pending=entries.filter(([k,t])=>(t.status==='pending'||(!t.driverKey&&t.status!=='cancelled'&&t.status!=='rejected')));
   const completed=entries.filter(([k,t])=>['completed','approved'].includes(t.status));
   const ab=document.getElementById('trips-active-body');
   if(active.length===0){ab.innerHTML=`<tr><td colspan="8" class="empty-state">Sin viajes activos</td></tr>`;}
