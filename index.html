@@ -1415,38 +1415,37 @@ async function saveNewTrip(){
 }
 async function editTripDate(tripKey, currentDatetime){
   const current=currentDatetime?new Date(currentDatetime).toISOString().slice(0,16):'';
-  const input=document.createElement('input');
-  input.type='datetime-local';
-  input.value=current;
-  input.style.cssText='position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9999;padding:12px;border-radius:8px;font-size:16px;border:2px solid var(--accent);background:var(--bg2);color:var(--text);outline:none';
+  // Usar modal estilo FCD en lugar de overlay custom
+  const existing=document.getElementById('edit-date-overlay');
+  if(existing)document.body.removeChild(existing);
   const overlay=document.createElement('div');
-  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9998;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px';
-  const label=document.createElement('div');
-  label.textContent='Selecciona nueva fecha y hora';
-  label.style.cssText='color:#fff;font-size:15px;font-weight:600';
-  const btnWrap=document.createElement('div');
-  btnWrap.style.cssText='display:flex;gap:8px;margin-top:8px';
-  const btnOk=document.createElement('button');
-  btnOk.textContent='✅ Guardar';
-  btnOk.style.cssText='padding:10px 20px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer';
-  const btnCancel=document.createElement('button');
-  btnCancel.textContent='✕ Cancelar';
-  btnCancel.style.cssText='padding:10px 20px;background:transparent;color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:8px;font-size:14px;cursor:pointer';
-  btnWrap.appendChild(btnOk);
-  btnWrap.appendChild(btnCancel);
-  overlay.appendChild(label);
-  overlay.appendChild(input);
-  overlay.appendChild(btnWrap);
+  overlay.id='edit-date-overlay';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+  overlay.innerHTML=`
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;width:100%;max-width:360px;overflow:hidden">
+      <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+        <span style="font-size:15px;font-weight:700">✏️ Editar fecha y hora</span>
+        <span onclick="document.body.removeChild(document.getElementById('edit-date-overlay'))" style="cursor:pointer;font-size:18px;color:var(--text3);padding:0 4px">×</span>
+      </div>
+      <div style="padding:20px">
+        <label style="display:block;font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px">Nueva fecha y hora</label>
+        <input id="edit-date-input" type="datetime-local" value="${current}" style="width:100%;background:var(--bg3);border:1px solid var(--border2);color:var(--text);padding:10px 12px;border-radius:8px;font-size:14px;outline:none">
+      </div>
+      <div style="padding:12px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end">
+        <button onclick="document.body.removeChild(document.getElementById('edit-date-overlay'))" style="padding:8px 16px;background:transparent;border:1px solid var(--border2);color:var(--text2);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">✕ Cancelar</button>
+        <button id="edit-date-save" style="padding:8px 16px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">✅ Guardar</button>
+      </div>
+    </div>`;
   document.body.appendChild(overlay);
-  input.focus();
-  btnOk.onclick=async()=>{
-    const newDatetime=input.value;
+  document.getElementById('edit-date-save').onclick=async()=>{
+    const newDatetime=document.getElementById('edit-date-input').value;
     if(!newDatetime){showToast('Selecciona una fecha','error');return;}
     await db.ref(`trips/${tripKey}/datetime`).set(newDatetime);
     document.body.removeChild(overlay);
     showToast('✅ Fecha actualizada');
   };
-  btnCancel.onclick=()=>document.body.removeChild(overlay);
+  // Cerrar al click fuera del modal
+  overlay.onclick=(e)=>{if(e.target===overlay)document.body.removeChild(overlay);};
 }
 function openNewTrip(){openModal('new-trip-modal');}
 function openUpdateTrip(k){showToast('Función de actualización disponible próximamente');}
