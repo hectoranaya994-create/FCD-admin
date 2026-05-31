@@ -1099,7 +1099,16 @@ function renderTripsPage(){
   else ab.innerHTML=active.map(([k,t])=>`<tr><td><strong>#${t.id||k.slice(-4)}</strong>${t.tripType==='vuelta'?'<span class="badge badge-purple" style="font-size:10px;margin-left:4px">🔄 Vuelta</span>':t.tripType==='ida'&&t.isRoundTrip?'<span class="badge badge-blue" style="font-size:10px;margin-left:4px">→ Ida</span>':''}</td><td>${t.clientName||'—'}</td><td style="font-size:11.5px;color:var(--accent2);white-space:nowrap">${t.datetime?new Date(t.datetime).toLocaleString('es',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):(t.createdAt?new Date(t.createdAt).toLocaleString('es',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):' — ')}</td><td>${(t.origin||'—').substring(0,16)}</td><td>${(t.destination||'—').substring(0,16)}</td><td>${t.driverName||'—'}</td><td>${tripStatusBadge(t.status)}</td><td style="display:flex;gap:4px"><button class="btn btn-ghost btn-sm" onclick="openUpdateTrip('${k}')">Ver</button><button class="btn btn-primary btn-sm" onclick="openReassign('${k}')">🔄 Reasignar</button><button class="btn btn-red btn-sm" onclick="cancelTrip('${k}')">✕ Cancelar</button></td></tr>`).join('');
   const pb=document.getElementById('trips-pending-body');
   if(pending.length===0){pb.innerHTML=`<tr><td colspan="6" class="empty-state">Sin viajes pendientes</td></tr>`;}
-  else pb.innerHTML=pending.map(([k,t])=>`<tr><td><strong>#${t.id||k.slice(-4)}</strong></td><td>${t.clientName||'—'}</td><td>${t.datetime?new Date(t.datetime).toLocaleString('es',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):(t.createdAt?new Date(t.createdAt).toLocaleString('es',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):' — ')}</td><td>${t.service||'—'}</td><td><span class="badge badge-yellow">⏳ Pendiente</span></td><td style="display:flex;gap:4px"><button class="btn btn-primary btn-sm" onclick="openAssign('${k}')">🚗 Asignar</button>${t.driverKey?`<button class="btn btn-ghost btn-sm" onclick="openReassign('${k}')">🔄 Reasignar</button>`:''}<button class="btn btn-red btn-sm" onclick="cancelTrip('${k}')">✕ Cancelar</button></td></tr>`).join('');
+  else pb.innerHTML=pending.map(([k,t])=>{
+    const isWaitingReturn=t.isRoundTrip&&t.tripType==='vuelta';
+    // Verificar si el viaje de ida ya fue completado
+    const idaTrip=isWaitingReturn?Object.values(STATE.allTrips).find(lt=>lt.id===t.linkedTripId):null;
+    const idaDone=idaTrip&&['completed','approved'].includes(idaTrip.status);
+    const estadoBadge=isWaitingReturn&&!idaDone
+      ?`<span class="badge badge-purple">🔄 Esperando regreso</span>`
+      :`<span class="badge badge-yellow">⏳ Pendiente</span>`;
+    return `<tr><td><strong>#${t.id||k.slice(-4)}</strong>${t.tripType==='vuelta'?'<span class="badge badge-purple" style="font-size:10px;margin-left:4px">🔄 Vuelta</span>':t.tripType==='ida'&&t.isRoundTrip?'<span class="badge badge-blue" style="font-size:10px;margin-left:4px">→ Ida</span>':''}</td><td>${t.clientName||'—'}</td><td>${t.datetime?new Date(t.datetime).toLocaleString('es',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):(t.createdAt?new Date(t.createdAt).toLocaleString('es',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):' — ')}</td><td>${t.service||'—'}</td><td>${estadoBadge}</td><td style="display:flex;gap:4px">${isWaitingReturn&&!idaDone?'<span style="font-size:11.5px;color:var(--text3);padding:5px 0">Esperando que termine la ida</span>':`<button class="btn btn-primary btn-sm" onclick="openAssign('${k}')">🚗 Asignar</button>${t.driverKey?`<button class="btn btn-ghost btn-sm" onclick="openReassign('${k}')">🔄 Reasignar</button>`:''}`}<button class="btn btn-red btn-sm" onclick="cancelTrip('${k}')">✕ Cancelar</button></td></tr>`;
+  }).join('');
   const cb=document.getElementById('trips-completed-body');
   if(completed.length===0){cb.innerHTML=`<tr><td colspan="7" class="empty-state">Sin viajes completados</td></tr>`;}
   else cb.innerHTML=completed.map(([k,t])=>`<tr><td><strong>#${t.id||k.slice(-4)}</strong></td><td>${t.clientName||'—'}</td><td>${t.driverName||'—'}</td><td>${t.completedAt?new Date(t.completedAt).toLocaleDateString('es'):'—'}</td><td style="color:var(--green)">$${t.price||0}</td><td>${t.paymentMethod||'—'}</td><td><button class="btn btn-ghost btn-sm" onclick="openReceipt('${k}')">🧾 Recibo</button></td></tr>`).join('');
@@ -1149,13 +1158,73 @@ function renderPendingApprovals(){
   const list=document.getElementById('pending-approvals-list');
   if(!list)return;
   if(entries.length===0){list.innerHTML=`<div class="empty-state" style="padding:20px"><div class="empty-icon">⏳</div>Sin servicios pendientes de aprobación</div>`;return;}
-  list.innerHTML=entries.map(([k,t])=>`<div style="background:var(--bg3);border-radius:8px;padding:12px;margin-bottom:8px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><div><strong>#${t.id||k.slice(-4)}</strong><span style="font-size:12px;color:var(--text3);margin-left:6px">${t.service||'—'}</span>${t.datetime?`<span style="font-size:11px;color:var(--accent2);margin-left:6px">🕐 ${new Date(t.datetime).toLocaleString('es',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}</span>`:''}</div><span style="font-size:15px;font-weight:700;color:var(--green)">$${t.price||0}</span></div><div style="font-size:12.5px;color:var(--text2)">Cliente: ${t.clientName||'—'} · Conductor: ${t.driverName||'—'}${t.miles?` · ${t.miles} mi${t.gpsTracked?' 📍':''}`:''} ${t.driverNotes?`<br>Notas: ${t.driverNotes}`:''}</div><div style="display:flex;gap:6px;margin-top:10px"><button class="btn btn-green btn-sm" onclick="openApprove('${k}')">✅ Aprobar</button><button class="btn btn-ghost btn-sm" onclick="openReceipt('${k}')">🧾 Recibo</button><button class="btn btn-red btn-sm" onclick="rejectTrip('${k}')">✕ Rechazar</button></div></div>`).join('');
+  list.innerHTML=entries.map(([k,t])=>{
+    // Buscar viaje ligado (ida/vuelta)
+    let linkedHtml='';
+    let linkedKey=null;
+    let linkedTrip=null;
+    if(t.isRoundTrip&&t.linkedTripId){
+      // Este es el viaje de vuelta, buscar el de ida
+      const idaEntry=Object.entries(STATE.allTrips).find(([lk,lt])=>lt.id===t.linkedTripId);
+      if(idaEntry){linkedKey=idaEntry[0];linkedTrip=idaEntry[1];}
+    } else if(t.isRoundTrip&&t.tripType==='ida'){
+      // Este es el de ida, buscar el de vuelta
+      const vueltaEntry=Object.entries(STATE.allTrips).find(([lk,lt])=>lt.linkedTripId===t.id);
+      if(vueltaEntry){linkedKey=vueltaEntry[0];linkedTrip=vueltaEntry[1];}
+    }
+    const bothCompleted=linkedTrip&&linkedTrip.status==='completed';
+    const linkedPrice=parseFloat(linkedTrip?.price||0);
+    const thisPrice=parseFloat(t.price||0);
+    const totalBoth=(thisPrice+linkedPrice).toFixed(2);
+    if(linkedTrip){
+      linkedHtml=`<div style="background:rgba(168,85,247,.08);border:1px solid rgba(168,85,247,.2);border-radius:6px;padding:8px;margin-top:8px;font-size:12px">
+        <div style="color:var(--purple);font-weight:700;margin-bottom:4px">${t.tripType==='ida'?'🔄 Viaje de vuelta ligado':'→ Viaje de ida ligado'}: #${linkedTrip.id||linkedKey?.slice(-4)}</div>
+        <div style="color:var(--text2)">Estado: ${linkedTrip.status==='completed'?'✅ Listo para aprobar':linkedTrip.status==='approved'?'✅ Ya aprobado':'⏳ '+linkedTrip.status}</div>
+      </div>`;
+    }
+    const showApproveAll=bothCompleted&&t.tripType==='ida';
+    return `<div style="background:var(--bg3);border-radius:8px;padding:12px;margin-bottom:8px;${t.isRoundTrip?'border-left:3px solid var(--purple)':''}">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div>
+          <strong>#${t.id||k.slice(-4)}</strong>
+          ${t.tripType?`<span class="badge ${t.tripType==='ida'?'badge-blue':'badge-purple'}" style="font-size:10px;margin-left:4px">${t.tripType==='ida'?'→ Ida':'🔄 Vuelta'}</span>`:''}
+          <span style="font-size:12px;color:var(--text3);margin-left:6px">${t.service||'—'}</span>
+          ${t.datetime?`<span style="font-size:11px;color:var(--accent2);margin-left:6px">🕐 ${new Date(t.datetime).toLocaleString('es',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}</span>`:''}
+        </div>
+        <span style="font-size:15px;font-weight:700;color:var(--green)">$${t.price||0}</span>
+      </div>
+      <div style="font-size:12.5px;color:var(--text2)">Cliente: ${t.clientName||'—'} · Conductor: ${t.driverName||'—'}${t.miles?` · ${t.miles} mi${t.gpsTracked?' 📍':''}`:''} ${t.driverNotes?`<br>Notas: ${t.driverNotes}`:''}</div>
+      ${linkedHtml}
+      <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
+        <button class="btn btn-green btn-sm" onclick="openApprove('${k}')">✅ Aprobar</button>
+        ${showApproveAll?`<button class="btn btn-sm" style="background:var(--purple);color:#fff" onclick="approveRoundTrip('${k}','${linkedKey}')">✅ Aprobar ambos ($${totalBoth})</button>`:''}
+        <button class="btn btn-ghost btn-sm" onclick="openReceipt('${k}')">🧾 Recibo</button>
+        <button class="btn btn-red btn-sm" onclick="rejectTrip('${k}')">✕ Rechazar</button>
+      </div>
+    </div>`;
+  }).join('');
   const approved=Object.values(STATE.allTrips).filter(t=>t.status==='approved');
   const today=new Date().toDateString();
   const todayTotal=approved.filter(t=>t.completedAt&&new Date(t.completedAt).toDateString()===today).reduce((s,t)=>s+(parseFloat(t.price)||0),0);
   const el=document.getElementById('pay-today');if(el)el.textContent=`$${todayTotal.toLocaleString()}`;
   const lp=document.getElementById('last-payments-list');
   if(lp){const last=approved.sort((a,b)=>(b.completedAt||0)-(a.completedAt||0)).slice(0,5);lp.innerHTML=last.length===0?'<div class="empty-state">Sin pagos registrados</div>':`<table style="width:100%;font-size:12.5px;border-collapse:collapse">${last.map(t=>`<tr><td style="padding:6px 0;border-top:1px solid var(--border)">${t.clientName||'—'}</td><td>${t.paymentMethod||'—'}</td><td style="color:var(--green);font-weight:700">$${t.price||0}</td></tr>`).join('')}</table>`;}
+}
+async function approveRoundTrip(idaKey, vueltaKey){
+  const method=prompt('Método de pago (Efectivo/Tarjeta/Zelle/Nequi/Daviplata):','Efectivo');
+  if(!method)return;
+  const ida=STATE.allTrips[idaKey];
+  const vuelta=STATE.allTrips[vueltaKey];
+  const idaPrice=parseFloat(ida?.price||0);
+  const vueltaPrice=parseFloat(vuelta?.price||0);
+  const total=(idaPrice+vueltaPrice).toFixed(2);
+  if(!confirm(`¿Aprobar ida ($${idaPrice}) + vuelta ($${vueltaPrice}) = Total $${total}?`))return;
+  await db.ref(`trips/${idaKey}`).update({status:'approved',approvedAt:Date.now(),paymentMethod:method,price:idaPrice});
+  await db.ref(`trips/${vueltaKey}`).update({status:'approved',approvedAt:Date.now(),paymentMethod:method,price:vueltaPrice,roundTripTotal:total});
+  const idaDriverKey=ida?.driverKey;const vueltaDriverKey=vuelta?.driverKey;
+  if(idaDriverKey)await db.ref(`drivers/${idaDriverKey}/status`).set('available');
+  if(vueltaDriverKey&&vueltaDriverKey!==idaDriverKey)await db.ref(`drivers/${vueltaDriverKey}/status`).set('available');
+  showToast(`✅ Ida y vuelta aprobados — Total $${total}`);
 }
 async function registerPayment(){showToast('Pago registrado');}
 async function rejectTrip(k){if(confirm('¿Rechazar este servicio?')){await db.ref(`trips/${k}/status`).set('rejected');showToast('Servicio rechazado');}}
