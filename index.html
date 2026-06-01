@@ -477,10 +477,21 @@ select option{background:var(--bg3);color:var(--text)}
       <div class="page" id="page-history">
         <div class="page-header"><div class="page-title">📋 History</div></div>
         <div class="history-search">
-          <input id="hist-search" placeholder="Buscar por cliente o conductor..." oninput="filterHistory()">
+          <input id="hist-search" placeholder="Buscar por cliente o conductor..." oninput="filterHistory()" style="flex:1;min-width:160px">
           <input id="hist-date" type="date" onchange="filterHistory()" style="width:140px">
+          <select id="hist-driver" onchange="filterHistory()" style="width:160px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);padding:8px 11px;border-radius:8px;font-size:13px">
+            <option value="">— Todos los conductores —</option>
+          </select>
+          <select id="hist-status" onchange="filterHistory()" style="width:150px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);padding:8px 11px;border-radius:8px;font-size:13px">
+            <option value="">— Todos los estados —</option>
+            <option value="approved">✅ Aprobado</option>
+            <option value="completed">🟣 Completado</option>
+            <option value="cancelled">✕ Cancelado</option>
+            <option value="rejected">❌ Rechazado</option>
+          </select>
           <button class="btn btn-ghost btn-sm" onclick="clearHistoryFilter()">✕ Limpiar</button>
         </div>
+        <div style="font-size:12px;color:var(--text3);margin-bottom:8px" id="hist-count"></div>
         <div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Cliente</th><th>Conductor</th><th>Servicio</th><th>Millas</th><th>USD</th><th>Estado</th><th>Recibo</th></tr></thead><tbody id="history-list"></tbody></table></div>
       </div>
 
@@ -1094,17 +1105,44 @@ function tripStatusBadge(s){const map={assigned:'<span class="badge badge-gray">
 // HISTORY
 // ═══════════════════════════════════════════════════════
 function renderHistoryPage(){
-  const entries=Object.entries(STATE.allTrips).filter(([k,t])=>['completed','approved'].includes(t.status));
-  entries.sort((a,b)=>(b[1].completedAt||0)-(a[1].completedAt||0));
+  // Poblar select de conductores
+  const drvSel=document.getElementById('hist-driver');
+  if(drvSel&&drvSel.options.length===1){
+    const drivers=[...new Set(Object.values(STATE.allTrips).map(t=>t.driverName).filter(Boolean))].sort();
+    drivers.forEach(n=>{const o=document.createElement('option');o.value=n;o.textContent=n;drvSel.appendChild(o);});
+  }
+  const entries=Object.entries(STATE.allTrips).filter(([k,t])=>['completed','approved','cancelled','rejected'].includes(t.status));
+  entries.sort((a,b)=>(b[1].completedAt||b[1].cancelledAt||b[1].createdAt||0)-(a[1].completedAt||a[1].cancelledAt||a[1].createdAt||0));
   const s=(document.getElementById('hist-search')||{}).value||'';
   const d=(document.getElementById('hist-date')||{}).value||'';
-  const filtered=entries.filter(([k,t])=>{const ms=!s||(t.clientName||'').toLowerCase().includes(s.toLowerCase())||(t.driverName||'').toLowerCase().includes(s.toLowerCase());const md=!d||(t.completedAt&&new Date(t.completedAt).toISOString().startsWith(d));return ms&&md;});
+  const drv=(document.getElementById('hist-driver')||{}).value||'';
+  const st=(document.getElementById('hist-status')||{}).value||'';
+  const filtered=entries.filter(([k,t])=>{
+    const ms=!s||(t.clientName||'').toLowerCase().includes(s.toLowerCase())||(t.driverName||'').toLowerCase().includes(s.toLowerCase());
+    const refDate=t.completedAt||t.cancelledAt||t.createdAt;
+    const md=!d||(refDate&&new Date(refDate).toISOString().startsWith(d));
+    const mdrv=!drv||(t.driverName||'')=== drv;
+    const mst=!st||t.status===st;
+    return ms&&md&&mdrv&&mst;
+  });
+  const countEl=document.getElementById('hist-count');
+  if(countEl)countEl.textContent=`${filtered.length} registro(s)`;
   const tbody=document.getElementById('history-list');
   if(filtered.length===0){tbody.innerHTML=`<tr><td colspan="8" class="empty-state">Sin registros</td></tr>`;return;}
-  tbody.innerHTML=filtered.map(([k,t])=>`<tr><td><div style="font-size:13px">${t.completedAt?new Date(t.completedAt).toLocaleDateString('es'):'—'}</div><div style="font-size:11px;color:var(--accent2)">${t.datetime?new Date(t.datetime).toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'}):''}</div></td><td>${t.clientName||'—'}</td><td>${t.driverName||'—'}</td><td>${t.service||'—'}</td><td>${t.miles||'—'}${t.gpsTracked?'📍':''}</td><td style="color:var(--green)">$${t.price||0}</td><td>${tripStatusBadge(t.status)}</td><td><button class="btn btn-ghost btn-sm" onclick="openReceipt('${k}')">🧾 Recibo</button></td></tr>`).join('');
+  tbody.innerHTML=filtered.map(([k,t])=>{
+    const refDate=t.completedAt||t.cancelledAt||t.createdAt;
+    const isCancelled=['cancelled','rejected'].includes(t.status);
+    return `<tr style="${isCancelled?'opacity:0.65':''}"><td><div style="font-size:13px">${refDate?new Date(refDate).toLocaleDateString('es'):'—'}</div><div style="font-size:11px;color:var(--accent2)">${t.datetime?new Date(t.datetime).toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'}):''}</div></td><td>${t.clientName||'—'}</td><td>${t.driverName||'—'}</td><td>${t.service||'—'}</td><td>${t.miles||'—'}${t.gpsTracked?'📍':''}</td><td style="color:${isCancelled?'var(--text3)':'var(--green)'}">$${t.price||0}</td><td>${tripStatusBadge(t.status)}${t.cancelNote?`<div style="font-size:11px;color:var(--text3);margin-top:3px">📝 ${t.cancelNote}</div>`:''}</td><td>${!isCancelled?`<button class="btn btn-ghost btn-sm" onclick="openReceipt('${k}')">🧾 Recibo</button>`:'—'}</td></tr>`;
+  }).join('');
 }
 function filterHistory(){renderHistoryPage();}
-function clearHistoryFilter(){document.getElementById('hist-search').value='';document.getElementById('hist-date').value='';renderHistoryPage();}
+function clearHistoryFilter(){
+  document.getElementById('hist-search').value='';
+  document.getElementById('hist-date').value='';
+  document.getElementById('hist-driver').value='';
+  document.getElementById('hist-status').value='';
+  renderHistoryPage();
+}
 
 // ═══════════════════════════════════════════════════════
 // RECEIPT
@@ -1201,15 +1239,52 @@ async function approveRoundTrip(idaKey, vueltaKey){
   showToast(`✅ Ida y vuelta aprobados — Total $${total}`);
 }
 async function registerPayment(){showToast('Pago registrado');}
-async function rejectTrip(k){if(confirm('¿Rechazar este servicio?')){await db.ref(`trips/${k}/status`).set('rejected');showToast('Servicio rechazado');}}
+async function rejectTrip(k){
+  const t=STATE.allTrips[k];if(!t)return;
+  showNoteModal('¿Por qué rechazas este servicio?', async(note)=>{
+    await db.ref(`trips/${k}`).update({status:'rejected',rejectedAt:Date.now(),cancelNote:note||''});
+    showToast('Servicio rechazado');
+  });
+}
 
 async function cancelTrip(k){
   const t=STATE.allTrips[k];if(!t)return;
-  const msg=t.driverName?`¿Cancelar viaje #${t.id||k.slice(-4)}?\nEl conductor ${t.driverName} será liberado.`:`¿Cancelar viaje #${t.id||k.slice(-4)}?`;
-  if(!confirm(msg))return;
-  await db.ref(`trips/${k}`).update({status:'cancelled',cancelledAt:Date.now()});
-  if(t.driverKey)await db.ref(`drivers/${t.driverKey}/status`).set('available');
-  showToast('Viaje cancelado');
+  const header=t.driverName?`Cancelar viaje #${t.id||k.slice(-4)} — conductor ${t.driverName} será liberado`:`Cancelar viaje #${t.id||k.slice(-4)}`;
+  showNoteModal(header, async(note)=>{
+    await db.ref(`trips/${k}`).update({status:'cancelled',cancelledAt:Date.now(),cancelNote:note||''});
+    if(t.driverKey)await db.ref(`drivers/${t.driverKey}/status`).set('available');
+    showToast('Viaje cancelado');
+  });
+}
+
+function showNoteModal(title, onConfirm){
+  const existing=document.getElementById('note-modal-overlay');
+  if(existing)document.body.removeChild(existing);
+  const overlay=document.createElement('div');
+  overlay.id='note-modal-overlay';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+  overlay.innerHTML=`
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;width:100%;max-width:400px;overflow:hidden">
+      <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+        <span style="font-size:14px;font-weight:700">${title}</span>
+        <span onclick="document.body.removeChild(document.getElementById('note-modal-overlay'))" style="cursor:pointer;font-size:18px;color:var(--text3);padding:0 4px">×</span>
+      </div>
+      <div style="padding:20px">
+        <label style="display:block;font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px">Motivo (opcional)</label>
+        <textarea id="note-modal-input" rows="3" placeholder="Ej: Cliente no se presentó, error de agendamiento..." style="width:100%;background:var(--bg3);border:1px solid var(--border2);color:var(--text);padding:10px 12px;border-radius:8px;font-size:13px;outline:none;resize:none"></textarea>
+      </div>
+      <div style="padding:12px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end">
+        <button onclick="document.body.removeChild(document.getElementById('note-modal-overlay'))" style="padding:8px 16px;background:transparent;border:1px solid var(--border2);color:var(--text2);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">Cancelar</button>
+        <button id="note-modal-confirm" style="padding:8px 16px;background:#dc2626;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">Confirmar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  document.getElementById('note-modal-confirm').onclick=async()=>{
+    const note=document.getElementById('note-modal-input').value.trim();
+    document.body.removeChild(overlay);
+    await onConfirm(note);
+  };
+  overlay.onclick=(e)=>{if(e.target===overlay)document.body.removeChild(overlay);};
 }
 
 // ═══════════════════════════════════════════════════════
