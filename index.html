@@ -603,36 +603,10 @@ select option{background:var(--bg3);color:var(--text)}
         <div><div style="font-weight:700" id="drv-name">—</div><div style="font-size:12px;color:var(--text3)" id="drv-vehicle">—</div></div>
         <div id="drv-badge" style="margin-left:auto;font-size:12px;padding:4px 10px;background:var(--green2);color:#fff;border-radius:10px">Disponible</div>
       </div>
-      <div id="drv-trip-card" style="display:none">
-        <div class="card" style="margin-bottom:14px;border-color:var(--accent)">
-          <div style="display:flex;gap:6px;margin-bottom:12px">
-            <div class="chip active" id="drv-step1">1 Asignado</div>
-            <div class="chip" id="drv-step2">2 Iniciado</div>
-            <div class="chip" id="drv-step3">3 Terminado</div>
-          </div>
-          <div style="font-size:15px;font-weight:700;margin-bottom:4px" id="drv-trip-id">Viaje #—</div>
-          <div style="font-size:13px;color:var(--text2);margin-bottom:12px" id="drv-trip-service">—</div>
-          <div style="font-size:12.5px;margin-bottom:6px"><span style="color:var(--text3)">Recogida:</span> <span id="drv-trip-origin">—</span></div>
-          <div style="font-size:12.5px;margin-bottom:12px"><span style="color:var(--text3)">Destino:</span> <span id="drv-trip-dest">—</span></div>
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-            <div class="user-avatar" style="width:30px;height:30px;font-size:11px" id="drv-client-av">—</div>
-            <div><div style="font-size:13px;font-weight:600" id="drv-client-name">—</div><div style="font-size:11.5px;color:var(--text3)" id="drv-client-phone">—</div></div>
-            <div id="drv-client-wa" style="margin-left:auto"></div>
-          </div>
-          <div style="font-size:12px;color:var(--text3);margin-bottom:8px" id="drv-admin-note"></div>
-          <div style="background:var(--bg3);border-radius:8px;padding:10px;text-align:center;margin-bottom:12px" id="drv-timer-wrap">
-            <div style="font-size:11px;color:var(--text3)">Tiempo en servicio</div>
-            <div style="font-size:22px;font-weight:700;letter-spacing:2px" id="drv-timer">00:00</div>
-          </div>
-          <div class="form-group" style="margin-bottom:8px"><label>📝 Observaciones</label><textarea id="drv-obs" rows="2" placeholder="Notas del servicio..."></textarea></div>
-          <div class="form-group"><label>📍 Millas recorridas</label><input id="drv-miles" type="number" placeholder="0"></div>
-          <div id="drv-action-btn" style="margin-top:10px"></div>
-        </div>
-      </div>
-      <div id="drv-no-trip" class="empty-state">
+      <div id="drv-trips-list"></div>
+      <div id="drv-no-trip" class="empty-state" style="display:none">
         <div class="empty-icon">🚗</div>
         <div>Sin viajes asignados en este momento</div>
-        <div style="font-size:12px;margin-top:4px">Espera que el admin te asigne un servicio</div>
       </div>
     </div>
   </div>
@@ -1799,34 +1773,47 @@ function renderDriverDashboard(){
 }
 function listenDriverTrip(){
   db.ref('trips').orderByChild('driverKey').equalTo(STATE.currentDriverKey).on('value',snap=>{
-    const trips=[];snap.forEach(c=>{const t=c.val();t._key=c.key;trips.push(t);});
-    const active=trips.find(t=>['assigned','arrived','started'].includes(t.status));
-    STATE.activeTripKey=active?active._key:null;STATE.activeTripData=active||null;
-    renderDriverTrip(active);
+    const trips=[];
+    snap.forEach(c=>{const t=c.val();t._key=c.key;trips.push(t);});
+    const active=trips.filter(t=>['assigned','onway','arrived','started'].includes(t.status));
+    active.sort((a,b)=>{
+      const order={started:0,arrived:1,onway:2,assigned:3};
+      const sd=(order[a.status]||3)-(order[b.status]||3);
+      if(sd!==0)return sd;
+      const aT=a.datetime?new Date(a.datetime).getTime():(a.createdAt||0);
+      const bT=b.datetime?new Date(b.datetime).getTime():(b.createdAt||0);
+      return aT-bT;
+    });
+    const list=document.getElementById('drv-trips-list');
+    const noTrip=document.getElementById('drv-no-trip');
+    const badge=document.getElementById('drv-badge');
+    if(active.length===0){
+      list.innerHTML='';
+      noTrip.style.display='block';
+      badge.style.background='var(--green2)';badge.textContent='Disponible';
+    } else {
+      noTrip.style.display='none';
+      badge.style.background='var(--yellow)';badge.style.color='#000';badge.textContent=`${active.length} viaje(s)`;
+      list.innerHTML=active.map(t=>{
+        const statusMap={assigned:'📋 Asignado',onway:'🚗 En camino',arrived:'📍 En recogida',started:'🚗 En ruta'};
+        const statusColor={assigned:'var(--text3)',onway:'var(--accent)',arrived:'var(--yellow)',started:'var(--green)'};
+        const datetime=t.datetime?new Date(t.datetime).toLocaleString('es',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):'—';
+        return `<div style="background:var(--bg3);border:1px solid ${t.status==='started'?'var(--yellow)':'var(--border)'};border-radius:12px;padding:14px;margin-bottom:10px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+            <span style="font-size:14px;font-weight:700">#${t.id||t._key.slice(-4)}</span>
+            <span style="font-size:12px;font-weight:700;color:${statusColor[t.status]||'var(--text3)'}">${statusMap[t.status]||t.status}</span>
+          </div>
+          <div style="font-size:13px;color:var(--text2);margin-bottom:6px">🕐 ${datetime}</div>
+          <div style="font-size:13px;font-weight:600;margin-bottom:6px">👤 ${t.clientName||'—'}</div>
+          <div style="font-size:12.5px;color:var(--text2);margin-bottom:3px">🟢 ${t.origin||'—'}</div>
+          <div style="font-size:12.5px;color:var(--text2);margin-bottom:6px">🔴 ${t.destination||'—'}</div>
+          <div style="font-size:12px;color:var(--text3)">${t.service||'—'}</div>
+          ${t.adminNote?`<div style="margin-top:8px;padding:6px 10px;background:rgba(245,158,11,.08);border-radius:8px;font-size:12px;color:#fcd34d">📋 ${t.adminNote}</div>`:''}
+          ${t.miles?`<div style="margin-top:6px;font-size:12px;color:var(--green)">📍 ${t.miles} mi${t.gpsTracked?' GPS':''}</div>`:''}
+        </div>`;
+      }).join('');
+    }
   });
-}
-function renderDriverTrip(trip){
-  const card=document.getElementById('drv-trip-card');const noTrip=document.getElementById('drv-no-trip');
-  if(!trip){card.style.display='none';noTrip.style.display='block';clearInterval(_drvTimer);return;}
-  card.style.display='block';noTrip.style.display='none';
-  document.getElementById('drv-trip-id').textContent=`Viaje #${trip.id||trip._key?.slice(-4)||'—'}`;
-  document.getElementById('drv-trip-service').textContent=trip.service||'—';
-  document.getElementById('drv-trip-origin').textContent=trip.origin||'—';
-  document.getElementById('drv-trip-dest').textContent=trip.destination||'—';
-  document.getElementById('drv-client-name').textContent=trip.clientName||'—';
-  document.getElementById('drv-client-phone').textContent=trip.clientPhone||'—';
-  document.getElementById('drv-admin-note').textContent=trip.adminNote?`📋 ${trip.adminNote}`:'';
-  const phone=(trip.clientPhone||'').replace(/\D/g,'');
-  document.getElementById('drv-client-av').textContent=initials(trip.clientName||'—');
-  document.getElementById('drv-client-wa').innerHTML=phone?`<button class="btn btn-wa btn-sm" onclick="window.open('https://wa.me/${phone}','_blank')">💬</button>`:'';
-  document.getElementById('drv-step1').className=`chip${trip.status==='assigned'?' active':''}`;
-  document.getElementById('drv-step2').className=`chip${trip.status==='arrived'?' active':trip.status==='started'?'':''} `;
-  document.getElementById('drv-step3').className=`chip${trip.status==='started'?' active':''}`;
-  if(trip.status==='started'&&trip.startedAt){clearInterval(_drvTimer);_drvTimer=setInterval(()=>{const el=Math.floor((Date.now()-trip.startedAt)/1000);const m=Math.floor(el/60).toString().padStart(2,'0');const s=(el%60).toString().padStart(2,'0');document.getElementById('drv-timer').textContent=`${m}:${s}`;},1000);}
-  const btn=document.getElementById('drv-action-btn');
-  if(trip.status==='assigned')btn.innerHTML=`<button class="btn btn-primary" onclick="drvArrive()">📍 Llegué al punto de recogida</button>`;
-  else if(trip.status==='arrived')btn.innerHTML=`<button class="btn btn-primary" onclick="drvStart()">▶ Iniciar viaje</button>`;
-  else if(trip.status==='started')btn.innerHTML=`<button class="btn btn-green" onclick="drvFinish()">🏁 Terminar servicio</button>`;
 }
 async function drvArrive(){if(!STATE.activeTripKey)return;await db.ref(`trips/${STATE.activeTripKey}`).update({status:'arrived',arrivedAt:Date.now()});}
 async function drvStart(){if(!STATE.activeTripKey)return;await db.ref(`trips/${STATE.activeTripKey}`).update({status:'started',startedAt:Date.now()});}
