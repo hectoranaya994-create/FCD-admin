@@ -1506,7 +1506,7 @@ function renderDriversPage(){
   const drivers=Object.entries(STATE.allDrivers);
   const container=document.getElementById('drivers-list');if(!container)return;
   if(drivers.length===0){container.innerHTML='<div class="empty-state"><div class="empty-icon">👤</div>Sin conductores registrados</div>';return;}
-  container.innerHTML=drivers.map(([k,d])=>`<div class="driver-card" style="flex-direction:column;align-items:flex-start;gap:8px;cursor:default"><div style="display:flex;align-items:center;gap:10px;width:100%"><div class="driver-avatar">${initials(d.name)}</div><div class="driver-info"><div class="driver-name">${d.name||k}</div><div class="driver-sub">${getVehicleStr(d)} · ${d.plate||'—'}</div></div>${d.location&&Date.now()-(d.location.updatedAt||0)<300000?'<span style="font-size:10px;color:var(--green);margin-left:auto">📍</span>':''}</div><div style="display:flex;align-items:center;gap:6px;width:100%">${statusBadge(d.status||'available')}<span style="flex:1"></span><button class="btn btn-ghost btn-sm" onclick="editDriver('${k}')">✏️ Editar</button><button class="btn btn-ghost btn-sm" onclick="resetDriverPassword('${k}','${(d.name||k).replace(/'/g,'')}')" >🔑 Reset</button></div></div>`).join('');
+  container.innerHTML=drivers.map(([k,d])=>`<div class="driver-card" style="flex-direction:column;align-items:flex-start;gap:8px;cursor:default"><div style="display:flex;align-items:center;gap:10px;width:100%"><div class="driver-avatar">${initials(d.name)}</div><div class="driver-info"><div class="driver-name">${d.name||k}</div><div class="driver-sub">${getVehicleStr(d)} · ${d.plate||'—'}</div></div>${d.location&&Date.now()-(d.location.updatedAt||0)<300000?'<span style="font-size:10px;color:var(--green);margin-left:auto">📍</span>':''}</div><div style="display:flex;align-items:center;gap:6px;width:100%">${statusBadge(d.status||'available')}<span style="flex:1"></span><button class="btn btn-ghost btn-sm" onclick="loginAsDriver('${k}')">👁 Ver app</button><button class="btn btn-ghost btn-sm" onclick="editDriver('${k}')">✏️ Editar</button><button class="btn btn-ghost btn-sm" onclick="resetDriverPassword('${k}','${(d.name||k).replace(/'/g,'')}')" >🔑 Reset</button></div></div>`).join('');
 }
 function openDriverModal(){document.getElementById('drv-modal-title').textContent='+ Nuevo Conductor';openModal('driver-modal');}
 let _resetDriverKey = null;
@@ -1778,6 +1778,7 @@ async function registerRateCobro(){showToast(`✅ Cobro registrado: ${document.g
 // ═══════════════════════════════════════════════════════
 let _drvTimer=null;
 function showDriverView(){document.getElementById('driver-overlay').classList.add('show');if(STATE.driverLogged&&STATE.currentDriverData){renderDriverDashboard();}else{document.getElementById('drv-login').style.display='block';document.getElementById('drv-dashboard').style.display='none';}}
+function loginAsDriver(driverKey){const d=STATE.allDrivers[driverKey];if(!d)return;STATE.driverLogged=true;STATE.currentDriverKey=driverKey;STATE.currentDriverData=d;document.getElementById('driver-overlay').classList.add('show');renderDriverDashboard();}
 function hideDriverView(){document.getElementById('driver-overlay').classList.remove('show');clearInterval(_drvTimer);}
 async function driverLogin(){
   const user=document.getElementById('drv-user').value.trim().toLowerCase();
