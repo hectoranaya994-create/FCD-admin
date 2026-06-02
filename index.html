@@ -200,7 +200,6 @@ select option{background:var(--bg3);color:var(--text)}
       <div class="login-err" id="admin-err">Credenciales incorrectas</div>
     </div>
     <div style="margin-top:14px;text-align:center;font-size:12px;color:var(--text3)">¿Eres conductor? Usa la <a href="https://hectoranaya994-create.github.io/fcd-conductor/" style="color:var(--accent2);text-decoration:none">app del conductor →</a></div>
-    <!-- hidden elements for driver login compatibility -->
     <div id="driver-form" style="display:none"><input id="driver-user"><input id="driver-pass" type="password"><div class="login-err" id="driver-err"></div></div>
   </div>
 </div>
@@ -281,7 +280,6 @@ select option{background:var(--bg3);color:var(--text)}
             <div id="dash-drivers-status"></div>
           </div>
         </div>
-        <!-- MAPA EN VIVO -->
         <div class="card" style="margin-top:16px" id="map-card">
           <div class="card-title" style="justify-content:space-between">
             <span>🗺️ Conductores en tiempo real</span>
@@ -787,12 +785,123 @@ select option{background:var(--bg3);color:var(--text)}
   </div>
 </div>
 
+<!-- CATALOG MODAL -->
+<div class="modal-overlay" id="catalog-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="catalog-modal-title">+ Nuevo servicio</div>
+      <div class="modal-close" onclick="closeModal('catalog-modal')">×</div>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="cat-edit-key">
+      <div class="form-group"><label>Nombre del servicio</label><input id="cat-name" placeholder="Wheelchair Sencillo"></div>
+      <div class="form-group"><label>Precio base (USD)</label><input id="cat-price" type="number" placeholder="65"></div>
+      <div class="form-group"><label>Descripción (opcional)</label><textarea id="cat-desc" rows="2" placeholder="Descripción para el admin..."></textarea></div>
+      <div class="form-group">
+        <label>Estado</label>
+        <select id="cat-active">
+          <option value="true">✅ Activo</option>
+          <option value="false">❌ Inactivo</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('catalog-modal')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveCatalogService()">✓ Guardar servicio</button>
+    </div>
+  </div>
+</div>
+
+<!-- REASIGNAR MODAL -->
+<div class="modal-overlay" id="reassign-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">🔄 Reasignar viaje</div>
+      <div class="modal-close" onclick="closeModal('reassign-modal')">×</div>
+    </div>
+    <div class="modal-body">
+      <div style="background:var(--bg3);border-radius:8px;padding:12px;margin-bottom:14px;font-size:13px">
+        <div><strong>Viaje:</strong> <span id="reassign-trip-id">—</span></div>
+        <div><strong>Cliente:</strong> <span id="reassign-client">—</span></div>
+        <div><strong>Conductor actual:</strong> <span id="reassign-current-driver" style="color:var(--yellow)">—</span></div>
+      </div>
+      <div class="form-group"><label>Nuevo conductor</label><select id="reassign-driver-sel"><option>Cargando...</option></select></div>
+      <div class="form-group"><label>Nota para el nuevo conductor (opcional)</label><textarea id="reassign-note" rows="2" placeholder="Instrucciones especiales..."></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('reassign-modal')">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmReassign()">🔄 Reasignar</button>
+    </div>
+  </div>
+</div>
+
+<!-- RESET PASSWORD MODAL -->
+<div class="modal-overlay" id="reset-pass-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">🔑 Restablecer contraseña</div>
+      <div class="modal-close" onclick="closeModal('reset-pass-modal')">×</div>
+    </div>
+    <div class="modal-body">
+      <div style="background:var(--bg3);border-radius:8px;padding:12px;margin-bottom:14px;font-size:13px">
+        <div><strong>Conductor:</strong> <span id="reset-driver-name">—</span></div>
+      </div>
+      <div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:8px;padding:10px;font-size:12.5px;color:#fcd34d;margin-bottom:14px">
+        ⚠️ Esta acción cambiará la contraseña del conductor. Comunícale la nueva contraseña.
+      </div>
+      <div class="form-group"><label>Clave de autorización admin</label><input id="reset-admin-auth" type="password" placeholder="Ingresa tu clave de admin"></div>
+      <div class="form-group"><label>Nueva contraseña</label><input id="reset-new-pass" type="password" placeholder="Mínimo 4 caracteres"></div>
+      <div class="form-group"><label>Confirmar nueva contraseña</label><input id="reset-confirm-pass" type="password" placeholder="Repite la contraseña"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('reset-pass-modal')">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmResetPassword()">🔑 Confirmar cambio</button>
+    </div>
+  </div>
+</div>
+
+<!-- CLIENT PORTAL MODAL — NUEVO -->
+<div class="modal-overlay" id="client-portal-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">🔑 Acceso al Portal de Reservas</div>
+      <div class="modal-close" onclick="closeModal('client-portal-modal')">×</div>
+    </div>
+    <div class="modal-body">
+      <div style="background:var(--bg3);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px">
+        <strong>Cliente:</strong> <span id="cp-client-name">—</span>
+      </div>
+      <div style="background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.2);border-radius:8px;padding:10px;font-size:12.5px;margin-bottom:14px">
+        💡 Estas credenciales permiten al cliente ingresar a <strong>fcd-booking.html</strong> para crear sus propias reservas.
+      </div>
+      <div id="cp-current-info" style="display:none;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);border-radius:8px;padding:8px 12px;font-size:12.5px;color:#4ade80;margin-bottom:14px"></div>
+      <div class="form-group">
+        <label>Usuario (login cliente)</label>
+        <input id="cp-username" placeholder="ej: james.wilson" autocomplete="off" autocapitalize="none">
+      </div>
+      <div class="form-group">
+        <label>Contraseña <span style="font-size:11px;color:var(--text3);font-weight:400">(dejar vacío para no cambiar)</span></label>
+        <input id="cp-password" type="password" placeholder="••••••••" autocomplete="new-password">
+      </div>
+      <div class="form-group">
+        <label>Estado</label>
+        <select id="cp-status">
+          <option value="true">✅ Activo</option>
+          <option value="false">❌ Inactivo</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer" style="justify-content:space-between">
+      <button class="btn btn-red btn-sm" onclick="removeClientPortalAccess()" style="margin-right:auto">🗑 Eliminar acceso</button>
+      <button class="btn btn-ghost" onclick="closeModal('client-portal-modal')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveClientPortalAccess()">💾 Guardar acceso</button>
+    </div>
+  </div>
+</div>
+
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
-// ═══════════════════════════════════════════════════════
-// FIREBASE CONFIG — v66 valores correctos
-// ═══════════════════════════════════════════════════════
 const firebaseConfig = {
   apiKey: "AIzaSyBdeKYulchRCEmDzdzuNNgU2-jhu0gzku0",
   authDomain: "first-class-drive-dcf90.firebaseapp.com",
@@ -805,17 +914,11 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-// ═══════════════════════════════════════════════════════
-// SHA-256
-// ═══════════════════════════════════════════════════════
 async function sha256(msg) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(msg));
   return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
 }
 
-// ═══════════════════════════════════════════════════════
-// FARE RANGES
-// ═══════════════════════════════════════════════════════
 let FARE_RANGES = [{from:1,to:3,price:2.00},{from:4,to:8,price:2.50},{from:9,to:15,price:3.00},{from:16,to:999,price:3.50}];
 function getRateForMiles(miles) {
   if (!miles || miles <= 0) return 0;
@@ -834,9 +937,6 @@ function loadFareRanges() {
   });
 }
 
-// ═══════════════════════════════════════════════════════
-// STATE
-// ═══════════════════════════════════════════════════════
 let STATE = {
   adminLogged:false, driverLogged:false, currentDriverKey:null, currentDriverData:null,
   activeTripKey:null, activeTripData:null, timerInterval:null, timerSeconds:0,
@@ -850,9 +950,6 @@ const ADMIN_CREDENTIALS = {user:'admin',passHash:''};
 async function initAdminHash() { ADMIN_CREDENTIALS.passHash = await sha256('FCD2024!'); }
 initAdminHash();
 
-// ═══════════════════════════════════════════════════════
-// AUTH
-// ═══════════════════════════════════════════════════════
 function switchLoginTab(t) {
   document.querySelectorAll('.login-tab').forEach((el,i)=>{el.classList.toggle('active',i===(t==='admin'?0:1))});
   document.getElementById('admin-form').classList.toggle('active',t==='admin');
@@ -890,9 +987,6 @@ async function loginDriver() {
 }
 function logoutAdmin() { STATE.adminLogged=false; document.getElementById('login-screen').style.display='flex'; document.getElementById('admin-user').value=''; document.getElementById('admin-pass').value=''; }
 
-// ═══════════════════════════════════════════════════════
-// NAVIGATION
-// ═══════════════════════════════════════════════════════
 function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); document.getElementById('sidebar-overlay').classList.toggle('show'); }
 function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebar-overlay').classList.remove('show'); }
 function showPage(id) {
@@ -917,9 +1011,6 @@ function switchTab(el, targetId) {
   ids.forEach(tid=>{const e=document.getElementById(tid);if(e)e.style.display=tid===targetId?'block':'none';});
 }
 
-// ═══════════════════════════════════════════════════════
-// FIREBASE LISTENERS
-// ═══════════════════════════════════════════════════════
 function startFirebaseListeners() {
   loadFareRanges();
   loadCatalog();
@@ -930,9 +1021,6 @@ function startFirebaseListeners() {
 }
 function refreshData() { showToast('↻ Datos actualizados'); }
 
-// ═══════════════════════════════════════════════════════
-// MAPA EN VIVO — GPS conductores
-// ═══════════════════════════════════════════════════════
 let adminMap = null;
 const driverMarkers = {};
 const driverInfoWindows = {};
@@ -1022,9 +1110,6 @@ function centerOnDriver(key) {
   if(driverInfoWindows[key]) driverInfoWindows[key].open(adminMap,driverMarkers[key]);
 }
 
-// ═══════════════════════════════════════════════════════
-// DASHBOARD
-// ═══════════════════════════════════════════════════════
 function renderDashboardStats() {
   const trips = Object.values(STATE.allTrips);
   const active = trips.filter(t=>['assigned','onway','arrived','started','in_progress'].includes(t.status)).length;
@@ -1071,9 +1156,6 @@ function updateDriverStats() {
 
 function updateTripsBadge(){const pending=Object.values(STATE.allTrips).filter(t=>!t.driverKey&&t.status==='pending').length;const el=document.getElementById('nb-trips');el.textContent=pending;el.style.display=pending>0?'flex':'none';}
 
-// ═══════════════════════════════════════════════════════
-// TRIPS
-// ═══════════════════════════════════════════════════════
 function renderTripsPage(){
   const entries=Object.entries(STATE.allTrips);
   const active=entries.filter(([k,t])=>['assigned','onway','arrived','started','in_progress'].includes(t.status));
@@ -1086,12 +1168,9 @@ function renderTripsPage(){
   if(pending.length===0){pb.innerHTML=`<tr><td colspan="7" class="empty-state">Sin viajes pendientes</td></tr>`;}
   else pb.innerHTML=pending.map(([k,t])=>{
     const isWaitingReturn=t.isRoundTrip&&t.tripType==='vuelta';
-    // Verificar si el viaje de ida ya fue completado
     const idaTrip=isWaitingReturn?Object.values(STATE.allTrips).find(lt=>lt.id===t.linkedTripId):null;
     const idaDone=idaTrip&&['completed','approved'].includes(idaTrip.status);
-    const estadoBadge=isWaitingReturn&&!idaDone
-      ?`<span class="badge badge-purple">🔄 Esperando regreso</span>`
-      :`<span class="badge badge-yellow">⏳ Pendiente</span>`;
+    const estadoBadge=isWaitingReturn&&!idaDone?`<span class="badge badge-purple">🔄 Esperando regreso</span>`:`<span class="badge badge-yellow">⏳ Pendiente</span>`;
     return `<tr><td><strong>#${t.id||k.slice(-4)}</strong>${t.tripType==='vuelta'?'<span class="badge badge-purple" style="font-size:10px;margin-left:4px">🔄 Vuelta</span>':t.tripType==='ida'&&t.isRoundTrip?'<span class="badge badge-blue" style="font-size:10px;margin-left:4px">→ Ida</span>':''}</td><td>${t.clientName||'—'}</td><td style="white-space:nowrap">${t.datetime?new Date(t.datetime).toLocaleString('es',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):(t.createdAt?new Date(t.createdAt).toLocaleString('es',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):' — ')}<button class="btn btn-ghost btn-sm" style="margin-left:6px;padding:2px 6px;font-size:11px" onclick="editTripDate('${k}','${t.datetime||''}')">✏️</button></td><td style="font-size:11.5px;min-width:180px"><div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px" title="${t.origin||''}">${t.origin||'—'}</div><button class="btn btn-ghost btn-sm" style="padding:2px 8px;font-size:11px;margin-top:4px" onclick="editTripAddress('${k}','origin','${(t.origin||'').replace(/'/g,'&apos;')}')">✏️ Editar</button></td><td style="font-size:11.5px;min-width:180px"><div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px" title="${t.destination||''}">${t.destination||'—'}</div><button class="btn btn-ghost btn-sm" style="padding:2px 8px;font-size:11px;margin-top:4px" onclick="editTripAddress('${k}','destination','${(t.destination||'').replace(/'/g,'&apos;')}')">✏️ Editar</button></td><td>${estadoBadge}</td><td style="display:flex;gap:4px"><button class="btn btn-primary btn-sm" onclick="openAssign('${k}')">🚗 Asignar</button>${t.driverKey?`<button class="btn btn-ghost btn-sm" onclick="openReassign('${k}')">🔄 Reasignar</button>`:''}<button class="btn btn-red btn-sm" onclick="cancelTrip('${k}')">✕ Cancelar</button></td></tr>`;
   }).join('');
   const cb=document.getElementById('trips-completed-body');
@@ -1101,11 +1180,7 @@ function renderTripsPage(){
 
 function tripStatusBadge(s){const map={assigned:'<span class="badge badge-gray">📋 Asignado</span>',onway:'<span class="badge badge-blue">🚗 En camino</span>',arrived:'<span class="badge badge-yellow">📍 En recogida</span>',started:'<span class="badge badge-yellow">🚗 En ruta</span>',in_progress:'<span class="badge badge-yellow">En curso</span>',completed:'<span class="badge badge-purple">Completado</span>',approved:'<span class="badge badge-green">Aprobado</span>',pending:'<span class="badge badge-gray">Pendiente</span>',cancelled:'<span class="badge badge-red">✕ Cancelado</span>',rejected:'<span class="badge badge-red">Rechazado</span>'};return map[s]||`<span class="badge badge-gray">${s}</span>`;}
 
-// ═══════════════════════════════════════════════════════
-// HISTORY
-// ═══════════════════════════════════════════════════════
 function renderHistoryPage(){
-  // Poblar select de conductores
   const drvSel=document.getElementById('hist-driver');
   if(drvSel&&drvSel.options.length===1){
     const drivers=[...new Set(Object.values(STATE.allTrips).map(t=>t.driverName).filter(Boolean))].sort();
@@ -1144,9 +1219,6 @@ function clearHistoryFilter(){
   renderHistoryPage();
 }
 
-// ═══════════════════════════════════════════════════════
-// RECEIPT
-// ═══════════════════════════════════════════════════════
 function openReceipt(tripKey){
   const t=STATE.allTrips[tripKey];if(!t)return;
   const num=t.id||tripKey.slice(-6).toUpperCase();
@@ -1158,9 +1230,6 @@ function openReceipt(tripKey){
 function printReceipt(){const body=document.getElementById('receipt-body').innerHTML;const w=window.open('','_blank','width=400,height=600');w.document.write(`<!DOCTYPE html><html><head><title>Recibo FCD</title><style>body{font-family:system-ui,sans-serif;padding:20px;font-size:13px;color:#111}.receipt-header{text-align:center;padding:0 0 12px;border-bottom:2px dashed #ccc}.receipt-company{font-size:16px;font-weight:700}.receipt-sub{font-size:12px;color:#666}.receipt-num{font-size:11px;background:#f5f5f5;padding:3px 8px;border-radius:8px;display:inline-block;margin-top:6px}.receipt-row{display:flex;justify-content:space-between;padding:5px 0;font-size:12px;border-bottom:1px solid #eee}.label{color:#666}.receipt-total-row{display:flex;justify-content:space-between;padding:8px 0 0;font-size:16px;font-weight:700;border-top:2px solid #ccc;margin-top:4px}.receipt-footer{text-align:center;font-size:11px;color:#888;padding:10px 0 0;border-top:2px dashed #ccc;margin-top:12px}</style></head><body>${body}<script>window.print();setTimeout(()=>window.close(),500);<\/script></body></html>`);w.document.close();}
 function shareReceipt(){const t=STATE._currentReceiptTrip;if(!t)return;const text=`🚗 *First Class Drive* — Recibo #${STATE._currentReceiptNum}\n\n*Cliente:* ${t.clientName||'—'}\n*Servicio:* ${t.service||'—'}\n*Conductor:* ${t.driverName||'—'}\n*Total:* $${t.price||0} USD\n*Pago:* ${t.paymentMethod||'—'}\n\nGracias por elegirnos ✅`;const phone=t.clientPhone?t.clientPhone.replace(/\D/g,''):'';window.open(phone?`https://wa.me/${phone}?text=${encodeURIComponent(text)}`:`https://wa.me/?text=${encodeURIComponent(text)}`,'_blank');}
 
-// ═══════════════════════════════════════════════════════
-// PAYMENTS
-// ═══════════════════════════════════════════════════════
 function selectPayMethod(el,method){document.querySelectorAll('#page-payments .chip').forEach(c=>c.classList.remove('active'));el.classList.add('active');STATE.payMethod=method;}
 function renderPendingApprovals(){
   const entries=Object.entries(STATE.allTrips).filter(([k,t])=>t.status==='completed');
@@ -1171,16 +1240,13 @@ function renderPendingApprovals(){
   if(!list)return;
   if(entries.length===0){list.innerHTML=`<div class="empty-state" style="padding:20px"><div class="empty-icon">⏳</div>Sin servicios pendientes de aprobación</div>`;return;}
   list.innerHTML=entries.map(([k,t])=>{
-    // Buscar viaje ligado (ida/vuelta)
     let linkedHtml='';
     let linkedKey=null;
     let linkedTrip=null;
     if(t.isRoundTrip&&t.linkedTripId){
-      // Este es el viaje de vuelta, buscar el de ida
       const idaEntry=Object.entries(STATE.allTrips).find(([lk,lt])=>lt.id===t.linkedTripId);
       if(idaEntry){linkedKey=idaEntry[0];linkedTrip=idaEntry[1];}
     } else if(t.isRoundTrip&&t.tripType==='ida'){
-      // Este es el de ida, buscar el de vuelta
       const vueltaEntry=Object.entries(STATE.allTrips).find(([lk,lt])=>lt.linkedTripId===t.id);
       if(vueltaEntry){linkedKey=vueltaEntry[0];linkedTrip=vueltaEntry[1];}
     }
@@ -1189,31 +1255,10 @@ function renderPendingApprovals(){
     const thisPrice=parseFloat(t.price||0);
     const totalBoth=(thisPrice+linkedPrice).toFixed(2);
     if(linkedTrip){
-      linkedHtml=`<div style="background:rgba(168,85,247,.08);border:1px solid rgba(168,85,247,.2);border-radius:6px;padding:8px;margin-top:8px;font-size:12px">
-        <div style="color:var(--purple);font-weight:700;margin-bottom:4px">${t.tripType==='ida'?'🔄 Viaje de vuelta ligado':'→ Viaje de ida ligado'}: #${linkedTrip.id||linkedKey?.slice(-4)}</div>
-        <div style="color:var(--text2)">Estado: ${linkedTrip.status==='completed'?'✅ Listo para aprobar':linkedTrip.status==='approved'?'✅ Ya aprobado':'⏳ '+linkedTrip.status}</div>
-      </div>`;
+      linkedHtml=`<div style="background:rgba(168,85,247,.08);border:1px solid rgba(168,85,247,.2);border-radius:6px;padding:8px;margin-top:8px;font-size:12px"><div style="color:var(--purple);font-weight:700;margin-bottom:4px">${t.tripType==='ida'?'🔄 Viaje de vuelta ligado':'→ Viaje de ida ligado'}: #${linkedTrip.id||linkedKey?.slice(-4)}</div><div style="color:var(--text2)">Estado: ${linkedTrip.status==='completed'?'✅ Listo para aprobar':linkedTrip.status==='approved'?'✅ Ya aprobado':'⏳ '+linkedTrip.status}</div></div>`;
     }
     const showApproveAll=bothCompleted&&t.tripType==='ida';
-    return `<div style="background:var(--bg3);border-radius:8px;padding:12px;margin-bottom:8px;${t.isRoundTrip?'border-left:3px solid var(--purple)':''}">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-        <div>
-          <strong>#${t.id||k.slice(-4)}</strong>
-          ${t.tripType?`<span class="badge ${t.tripType==='ida'?'badge-blue':'badge-purple'}" style="font-size:10px;margin-left:4px">${t.tripType==='ida'?'→ Ida':'🔄 Vuelta'}</span>`:''}
-          <span style="font-size:12px;color:var(--text3);margin-left:6px">${t.service||'—'}</span>
-          ${t.datetime?`<span style="font-size:11px;color:var(--accent2);margin-left:6px">🕐 ${new Date(t.datetime).toLocaleString('es',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}</span>`:''}
-        </div>
-        <span style="font-size:15px;font-weight:700;color:var(--green)">$${t.price||0}</span>
-      </div>
-      <div style="font-size:12.5px;color:var(--text2)">Cliente: ${t.clientName||'—'} · Conductor: ${t.driverName||'—'}${t.miles?` · ${t.miles} mi${t.gpsTracked?' 📍':''}`:''} ${t.driverNotes?`<br>Notas: ${t.driverNotes}`:''}</div>
-      ${linkedHtml}
-      <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
-        <button class="btn btn-green btn-sm" onclick="openApprove('${k}')">✅ Aprobar</button>
-        ${showApproveAll?`<button class="btn btn-sm" style="background:var(--purple);color:#fff" onclick="approveRoundTrip('${k}','${linkedKey}')">✅ Aprobar ambos ($${totalBoth})</button>`:''}
-        <button class="btn btn-ghost btn-sm" onclick="openReceipt('${k}')">🧾 Recibo</button>
-        <button class="btn btn-red btn-sm" onclick="rejectTrip('${k}')">✕ Rechazar</button>
-      </div>
-    </div>`;
+    return `<div style="background:var(--bg3);border-radius:8px;padding:12px;margin-bottom:8px;${t.isRoundTrip?'border-left:3px solid var(--purple)':''}"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><div><strong>#${t.id||k.slice(-4)}</strong>${t.tripType?`<span class="badge ${t.tripType==='ida'?'badge-blue':'badge-purple'}" style="font-size:10px;margin-left:4px">${t.tripType==='ida'?'→ Ida':'🔄 Vuelta'}</span>`:''}<span style="font-size:12px;color:var(--text3);margin-left:6px">${t.service||'—'}</span>${t.datetime?`<span style="font-size:11px;color:var(--accent2);margin-left:6px">🕐 ${new Date(t.datetime).toLocaleString('es',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}</span>`:''}</div><span style="font-size:15px;font-weight:700;color:var(--green)">$${t.price||0}</span></div><div style="font-size:12.5px;color:var(--text2)">Cliente: ${t.clientName||'—'} · Conductor: ${t.driverName||'—'}${t.miles?` · ${t.miles} mi${t.gpsTracked?' 📍':''}`:''} ${t.driverNotes?`<br>Notas: ${t.driverNotes}`:''}</div>${linkedHtml}<div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap"><button class="btn btn-green btn-sm" onclick="openApprove('${k}')">✅ Aprobar</button>${showApproveAll?`<button class="btn btn-sm" style="background:var(--purple);color:#fff" onclick="approveRoundTrip('${k}','${linkedKey}')">✅ Aprobar ambos ($${totalBoth})</button>`:''}<button class="btn btn-ghost btn-sm" onclick="openReceipt('${k}')">🧾 Recibo</button><button class="btn btn-red btn-sm" onclick="rejectTrip('${k}')">✕ Rechazar</button></div></div>`;
   }).join('');
   const approved=Object.values(STATE.allTrips).filter(t=>t.status==='approved');
   const today=new Date().toDateString();
@@ -1246,7 +1291,6 @@ async function rejectTrip(k){
     showToast('Servicio rechazado');
   });
 }
-
 async function cancelTrip(k){
   const t=STATE.allTrips[k];if(!t)return;
   const header=t.driverName?`Cancelar viaje #${t.id||k.slice(-4)} — conductor ${t.driverName} será liberado`:`Cancelar viaje #${t.id||k.slice(-4)}`;
@@ -1256,28 +1300,13 @@ async function cancelTrip(k){
     showToast('Viaje cancelado');
   });
 }
-
 function showNoteModal(title, onConfirm){
   const existing=document.getElementById('note-modal-overlay');
   if(existing)document.body.removeChild(existing);
   const overlay=document.createElement('div');
   overlay.id='note-modal-overlay';
   overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
-  overlay.innerHTML=`
-    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;width:100%;max-width:400px;overflow:hidden">
-      <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
-        <span style="font-size:14px;font-weight:700">${title}</span>
-        <span onclick="document.body.removeChild(document.getElementById('note-modal-overlay'))" style="cursor:pointer;font-size:18px;color:var(--text3);padding:0 4px">×</span>
-      </div>
-      <div style="padding:20px">
-        <label style="display:block;font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px">Motivo (opcional)</label>
-        <textarea id="note-modal-input" rows="3" placeholder="Ej: Cliente no se presentó, error de agendamiento..." style="width:100%;background:var(--bg3);border:1px solid var(--border2);color:var(--text);padding:10px 12px;border-radius:8px;font-size:13px;outline:none;resize:none"></textarea>
-      </div>
-      <div style="padding:12px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end">
-        <button onclick="document.body.removeChild(document.getElementById('note-modal-overlay'))" style="padding:8px 16px;background:transparent;border:1px solid var(--border2);color:var(--text2);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">Cancelar</button>
-        <button id="note-modal-confirm" style="padding:8px 16px;background:#dc2626;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">Confirmar</button>
-      </div>
-    </div>`;
+  overlay.innerHTML=`<div style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;width:100%;max-width:400px;overflow:hidden"><div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between"><span style="font-size:14px;font-weight:700">${title}</span><span onclick="document.body.removeChild(document.getElementById('note-modal-overlay'))" style="cursor:pointer;font-size:18px;color:var(--text3);padding:0 4px">×</span></div><div style="padding:20px"><label style="display:block;font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px">Motivo (opcional)</label><textarea id="note-modal-input" rows="3" placeholder="Ej: Cliente no se presentó, error de agendamiento..." style="width:100%;background:var(--bg3);border:1px solid var(--border2);color:var(--text);padding:10px 12px;border-radius:8px;font-size:13px;outline:none;resize:none"></textarea></div><div style="padding:12px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end"><button onclick="document.body.removeChild(document.getElementById('note-modal-overlay'))" style="padding:8px 16px;background:transparent;border:1px solid var(--border2);color:var(--text2);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">Cancelar</button><button id="note-modal-confirm" style="padding:8px 16px;background:#dc2626;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">Confirmar</button></div></div>`;
   document.body.appendChild(overlay);
   document.getElementById('note-modal-confirm').onclick=async()=>{
     const note=document.getElementById('note-modal-input').value.trim();
@@ -1287,74 +1316,22 @@ function showNoteModal(title, onConfirm){
   overlay.onclick=(e)=>{if(e.target===overlay)document.body.removeChild(overlay);};
 }
 
-// ═══════════════════════════════════════════════════════
-// APPROVE
-// ═══════════════════════════════════════════════════════
 function openApprove(tripKey){
   const t=STATE.allTrips[tripKey];if(!t)return;
   STATE.approveTripKey=tripKey;
   const miles=parseFloat(t.miles)||0;
   const ratePerMile=getRateForMiles(miles);
-  // Buscar precio: 1) en el nombre del servicio, 2) en el catálogo
   let servicePrice=0;
   const priceInName=parseFloat((t.service||'').match(/\$([\d.]+)/)?.[1]||0);
-  if(priceInName>0){
-    servicePrice=priceInName;
-  } else {
+  if(priceInName>0){servicePrice=priceInName;}else{
     const svcNorm=(t.service||'').toLowerCase().trim();
     const svcBase=svcNorm.split(/[—\-]/)[0].trim();
-    const catalogMatch=Object.values(allCatalogServices).find(s=>s.name&&(
-      svcNorm===s.name.toLowerCase().trim()||
-      svcBase===s.name.toLowerCase().trim()||
-      s.name.toLowerCase().trim().includes(svcBase)
-    ));
+    const catalogMatch=Object.values(allCatalogServices).find(s=>s.name&&(svcNorm===s.name.toLowerCase().trim()||svcBase===s.name.toLowerCase().trim()||s.name.toLowerCase().trim().includes(svcBase)));
     if(catalogMatch) servicePrice=parseFloat(catalogMatch.price)||0;
   }
   const banderazo=DEFAULT_BANDERAZO||3.50;
   const waitMin=parseFloat(t.waitMinutes||0);
-  document.getElementById('approve-body').innerHTML=`
-    <div style="font-size:13px">
-      <div style="background:var(--bg3);border-radius:8px;padding:12px;margin-bottom:14px">
-        <div><strong>Cliente:</strong> ${t.clientName||'—'}</div>
-        <div><strong>Conductor:</strong> ${t.driverName||'—'}</div>
-        <div><strong>Servicio:</strong> ${t.service||'—'}</div>
-        ${t.origin?`<div style="margin-top:6px;padding-top:6px;border-top:1px solid var(--border)"><span style="color:var(--text3)">🟢 </span>${t.origin}</div>`:''}
-        ${t.destination?`<div><span style="color:var(--text3)">🔴 </span>${t.destination}</div>`:''}
-        <div style="font-size:11.5px;color:var(--text3);margin-top:4px">Edita los valores si necesitas ajustar</div>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:10px">
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">
-          <span style="color:var(--text2)">Precio servicio ($)</span>
-          <input id="approve-service-price" type="number" value="${servicePrice}" style="width:90px;text-align:right;padding:4px 8px;border-radius:6px;font-size:13px;background:var(--bg3);border:1px solid var(--border2);color:var(--text)" oninput="recalcApprove()">
-        </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">
-          <span style="color:var(--text2)">Banderazo ($)</span>
-          <input id="approve-banderazo" type="number" value="${banderazo}" style="width:90px;text-align:right;padding:4px 8px;border-radius:6px;font-size:13px;background:var(--bg3);border:1px solid var(--border2);color:var(--text)" oninput="recalcApprove()">
-        </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">
-          <span style="color:var(--text2)">Millas recorridas</span>
-          <input id="approve-miles" type="number" value="${miles}" style="width:90px;text-align:right;padding:4px 8px;border-radius:6px;font-size:13px;background:var(--bg3);border:1px solid var(--border2);color:var(--text)" oninput="recalcApprove()">
-        </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">
-          <span style="color:var(--text2)">Tarifa por milla ($/mi)</span>
-          <input id="approve-rate" type="number" value="${ratePerMile}" style="width:90px;text-align:right;padding:4px 8px;border-radius:6px;font-size:13px;background:var(--bg3);border:1px solid var(--border2);color:var(--text)" oninput="recalcApprove()">
-        </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">
-          <span style="color:var(--text2)">Espera (minutos)</span>
-          <input id="approve-wait" type="number" value="${waitMin}" style="width:90px;text-align:right;padding:4px 8px;border-radius:6px;font-size:13px;background:var(--bg3);border:1px solid var(--border2);color:var(--text)" oninput="recalcApprove()">
-        </div>
-        <div style="display:flex;justify-content:space-between;font-size:17px;font-weight:700;padding-top:8px">
-          <span>Total</span>
-          <span id="approve-total-display" style="color:var(--green)">$0.00</span>
-        </div>
-      </div>
-      <div class="form-group" style="margin-top:14px">
-        <label>Método de pago</label>
-        <select id="approve-payment-method" style="background:var(--bg3);border:1px solid var(--border2);color:var(--text)">
-          <option>Efectivo</option><option>Tarjeta</option><option>Zelle</option><option>Nequi</option><option>Daviplata</option>
-        </select>
-      </div>
-    </div>`;
+  document.getElementById('approve-body').innerHTML=`<div style="font-size:13px"><div style="background:var(--bg3);border-radius:8px;padding:12px;margin-bottom:14px"><div><strong>Cliente:</strong> ${t.clientName||'—'}</div><div><strong>Conductor:</strong> ${t.driverName||'—'}</div><div><strong>Servicio:</strong> ${t.service||'—'}</div>${t.origin?`<div style="margin-top:6px;padding-top:6px;border-top:1px solid var(--border)"><span style="color:var(--text3)">🟢 </span>${t.origin}</div>`:''} ${t.destination?`<div><span style="color:var(--text3)">🔴 </span>${t.destination}</div>`:''}<div style="font-size:11.5px;color:var(--text3);margin-top:4px">Edita los valores si necesitas ajustar</div></div><div style="display:flex;flex-direction:column;gap:10px"><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text2)">Precio servicio ($)</span><input id="approve-service-price" type="number" value="${servicePrice}" style="width:90px;text-align:right;padding:4px 8px;border-radius:6px;font-size:13px;background:var(--bg3);border:1px solid var(--border2);color:var(--text)" oninput="recalcApprove()"></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text2)">Banderazo ($)</span><input id="approve-banderazo" type="number" value="${banderazo}" style="width:90px;text-align:right;padding:4px 8px;border-radius:6px;font-size:13px;background:var(--bg3);border:1px solid var(--border2);color:var(--text)" oninput="recalcApprove()"></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text2)">Millas recorridas</span><input id="approve-miles" type="number" value="${miles}" style="width:90px;text-align:right;padding:4px 8px;border-radius:6px;font-size:13px;background:var(--bg3);border:1px solid var(--border2);color:var(--text)" oninput="recalcApprove()"></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text2)">Tarifa por milla ($/mi)</span><input id="approve-rate" type="number" value="${ratePerMile}" style="width:90px;text-align:right;padding:4px 8px;border-radius:6px;font-size:13px;background:var(--bg3);border:1px solid var(--border2);color:var(--text)" oninput="recalcApprove()"></div><div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text2)">Espera (minutos)</span><input id="approve-wait" type="number" value="${waitMin}" style="width:90px;text-align:right;padding:4px 8px;border-radius:6px;font-size:13px;background:var(--bg3);border:1px solid var(--border2);color:var(--text)" oninput="recalcApprove()"></div><div style="display:flex;justify-content:space-between;font-size:17px;font-weight:700;padding-top:8px"><span>Total</span><span id="approve-total-display" style="color:var(--green)">$0.00</span></div></div><div class="form-group" style="margin-top:14px"><label>Método de pago</label><select id="approve-payment-method" style="background:var(--bg3);border:1px solid var(--border2);color:var(--text)"><option>Efectivo</option><option>Tarjeta</option><option>Zelle</option><option>Nequi</option><option>Daviplata</option></select></div></div>`;
   openModal('approve-modal');
   setTimeout(recalcApprove, 0);
 }
@@ -1372,9 +1349,6 @@ async function confirmApprove(){
   showToast(`✅ Servicio aprobado — $${STATE._approveTotal}`);
 }
 
-// ═══════════════════════════════════════════════════════
-// ASSIGN
-// ═══════════════════════════════════════════════════════
 function openAssign(tripKey){
   const t=STATE.allTrips[tripKey];if(!t)return;
   STATE.assignTripKey=tripKey;
@@ -1405,15 +1379,11 @@ function populateDriverSelects(){
   if(expSel) expSel.innerHTML='<option>— Seleccionar —</option>'+drivers.map(([k,d])=>`<option value="${k}">${d.name||k}</option>`).join('');
 }
 
-// ═══════════════════════════════════════════════════════
-// NEW TRIP
-// ═══════════════════════════════════════════════════════
 let _tripCounter = 100;
 function toggleRoundTrip(){
   const checked=document.getElementById('nt-roundtrip').checked;
   const fields=document.getElementById('roundtrip-fields');
   fields.style.display=checked?'flex':'none';
-  // Poblar select de conductor de regreso
   if(checked){
     const sel=document.getElementById('nt-return-driver');
     const drivers=Object.entries(STATE.allDrivers);
@@ -1434,23 +1404,14 @@ async function saveNewTrip(){
   let maxId=266;
   snap.forEach(c=>{const v=c.val();if(v&&v.id){const n=parseInt(v.id);if(!isNaN(n)&&n>maxId)maxId=n;}});
   const newId=(maxId+1).toString().padStart(4,'0');
-  // Crear viaje de ida
   await db.ref('trips').push({id:newId,clientName:client,clientPhone:phone,origin,destination:dest,service,datetime,note,adminNote:note,status:'pending',createdAt:Date.now(),source:'admin',isRoundTrip:isRoundTrip,tripType:'ida'});
-  // Si incluye regreso, crear viaje de vuelta ligado
   if(isRoundTrip){
     const returnId=(maxId+2).toString().padStart(4,'0');
     const returnDatetime=document.getElementById('nt-return-datetime').value;
     const returnNote=document.getElementById('nt-return-note').value;
     const returnDriverKey=document.getElementById('nt-return-driver').value;
     const returnDriverName=returnDriverKey?STATE.allDrivers[returnDriverKey]?.name||returnDriverKey:'';
-    const returnData={
-      id:returnId,clientName:client,clientPhone:phone,
-      origin:dest,destination:origin, // invertido
-      service,datetime:returnDatetime,note:returnNote,adminNote:returnNote,
-      status:returnDriverKey?'assigned':'pending',
-      createdAt:Date.now(),source:'admin',
-      isRoundTrip:true,tripType:'vuelta',linkedTripId:newId,
-    };
+    const returnData={id:returnId,clientName:client,clientPhone:phone,origin:dest,destination:origin,service,datetime:returnDatetime,note:returnNote,adminNote:returnNote,status:returnDriverKey?'assigned':'pending',createdAt:Date.now(),source:'admin',isRoundTrip:true,tripType:'vuelta',linkedTripId:newId};
     if(returnDriverKey){returnData.driverKey=returnDriverKey;returnData.driverName=returnDriverName;}
     await db.ref('trips').push(returnData);
     if(returnDriverKey) await db.ref(`drivers/${returnDriverKey}/status`).set('busy');
@@ -1466,27 +1427,12 @@ async function saveNewTrip(){
 }
 async function editTripDate(tripKey, currentDatetime){
   const current=currentDatetime?new Date(currentDatetime).toISOString().slice(0,16):'';
-  // Usar modal estilo FCD en lugar de overlay custom
   const existing=document.getElementById('edit-date-overlay');
   if(existing)document.body.removeChild(existing);
   const overlay=document.createElement('div');
   overlay.id='edit-date-overlay';
   overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
-  overlay.innerHTML=`
-    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;width:100%;max-width:360px;overflow:hidden">
-      <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
-        <span style="font-size:15px;font-weight:700">✏️ Editar fecha y hora</span>
-        <span onclick="document.body.removeChild(document.getElementById('edit-date-overlay'))" style="cursor:pointer;font-size:18px;color:var(--text3);padding:0 4px">×</span>
-      </div>
-      <div style="padding:20px">
-        <label style="display:block;font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px">Nueva fecha y hora</label>
-        <input id="edit-date-input" type="datetime-local" value="${current}" style="width:100%;background:var(--bg3);border:1px solid var(--border2);color:var(--text);padding:10px 12px;border-radius:8px;font-size:14px;outline:none">
-      </div>
-      <div style="padding:12px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end">
-        <button onclick="document.body.removeChild(document.getElementById('edit-date-overlay'))" style="padding:8px 16px;background:transparent;border:1px solid var(--border2);color:var(--text2);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">✕ Cancelar</button>
-        <button id="edit-date-save" style="padding:8px 16px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">✅ Guardar</button>
-      </div>
-    </div>`;
+  overlay.innerHTML=`<div style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;width:100%;max-width:360px;overflow:hidden"><div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between"><span style="font-size:15px;font-weight:700">✏️ Editar fecha y hora</span><span onclick="document.body.removeChild(document.getElementById('edit-date-overlay'))" style="cursor:pointer;font-size:18px;color:var(--text3);padding:0 4px">×</span></div><div style="padding:20px"><label style="display:block;font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px">Nueva fecha y hora</label><input id="edit-date-input" type="datetime-local" value="${current}" style="width:100%;background:var(--bg3);border:1px solid var(--border2);color:var(--text);padding:10px 12px;border-radius:8px;font-size:14px;outline:none"></div><div style="padding:12px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end"><button onclick="document.body.removeChild(document.getElementById('edit-date-overlay'))" style="padding:8px 16px;background:transparent;border:1px solid var(--border2);color:var(--text2);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">✕ Cancelar</button><button id="edit-date-save" style="padding:8px 16px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">✅ Guardar</button></div></div>`;
   document.body.appendChild(overlay);
   document.getElementById('edit-date-save').onclick=async()=>{
     const newDatetime=document.getElementById('edit-date-input').value;
@@ -1495,7 +1441,6 @@ async function editTripDate(tripKey, currentDatetime){
     document.body.removeChild(overlay);
     showToast('✅ Fecha actualizada');
   };
-  // Cerrar al click fuera del modal
   overlay.onclick=(e)=>{if(e.target===overlay)document.body.removeChild(overlay);};
 }
 function openNewTrip(){openModal('new-trip-modal');}
@@ -1507,21 +1452,7 @@ async function editTripAddress(tripKey, field, currentValue){
   const overlay=document.createElement('div');
   overlay.id='edit-addr-overlay';
   overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
-  overlay.innerHTML=`
-    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;width:100%;max-width:420px;overflow:hidden">
-      <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
-        <span style="font-size:15px;font-weight:700">✏️ Editar ${label}</span>
-        <span onclick="document.body.removeChild(document.getElementById('edit-addr-overlay'))" style="cursor:pointer;font-size:18px;color:var(--text3);padding:0 4px">×</span>
-      </div>
-      <div style="padding:20px">
-        <label style="display:block;font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px">${label}</label>
-        <input id="edit-addr-input" type="text" value="${currentValue.replace(/&apos;/g,"'")}" placeholder="Dirección completa" style="width:100%;background:var(--bg3);border:1px solid var(--border2);color:var(--text);padding:10px 12px;border-radius:8px;font-size:14px;outline:none">
-      </div>
-      <div style="padding:12px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end">
-        <button onclick="document.body.removeChild(document.getElementById('edit-addr-overlay'))" style="padding:8px 16px;background:transparent;border:1px solid var(--border2);color:var(--text2);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">✕ Cancelar</button>
-        <button id="edit-addr-save" style="padding:8px 16px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">✅ Guardar</button>
-      </div>
-    </div>`;
+  overlay.innerHTML=`<div style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;width:100%;max-width:420px;overflow:hidden"><div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between"><span style="font-size:15px;font-weight:700">✏️ Editar ${label}</span><span onclick="document.body.removeChild(document.getElementById('edit-addr-overlay'))" style="cursor:pointer;font-size:18px;color:var(--text3);padding:0 4px">×</span></div><div style="padding:20px"><label style="display:block;font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px">${label}</label><input id="edit-addr-input" type="text" value="${currentValue.replace(/&apos;/g,"'")}" placeholder="Dirección completa" style="width:100%;background:var(--bg3);border:1px solid var(--border2);color:var(--text);padding:10px 12px;border-radius:8px;font-size:14px;outline:none"></div><div style="padding:12px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end"><button onclick="document.body.removeChild(document.getElementById('edit-addr-overlay'))" style="padding:8px 16px;background:transparent;border:1px solid var(--border2);color:var(--text2);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">✕ Cancelar</button><button id="edit-addr-save" style="padding:8px 16px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">✅ Guardar</button></div></div>`;
   document.body.appendChild(overlay);
   document.getElementById('edit-addr-input').focus();
   document.getElementById('edit-addr-save').onclick=async()=>{
@@ -1534,9 +1465,6 @@ async function editTripAddress(tripKey, field, currentValue){
   overlay.onclick=(e)=>{if(e.target===overlay)document.body.removeChild(overlay);};
 }
 
-// ═══════════════════════════════════════════════════════
-// EXPENSES
-// ═══════════════════════════════════════════════════════
 function renderExpenses(){
   const entries=Object.entries(STATE.allExpenses).sort((a,b)=>(b[1].date||'').localeCompare(a[1].date||''));
   const tbody=document.getElementById('expenses-list');if(!tbody)return;
@@ -1559,9 +1487,7 @@ async function saveExpense(){
   showToast('✅ Gasto registrado');
 }
 
-// ═══════════════════════════════════════════════════════
-// CLIENTS
-// ═══════════════════════════════════════════════════════
+// ═══ CLIENTS ═══
 function renderClientsPage(){
   const clients=Object.entries(STATE.allClients);
   document.getElementById('cli-total').textContent=clients.length;
@@ -1573,7 +1499,7 @@ function renderClientsPage(){
   document.getElementById('cli-revenue').textContent=`$${revenue.toFixed(0)}`;
   const container=document.getElementById('clients-list');if(!container)return;
   if(clients.length===0){container.innerHTML='<div class="empty-state"><div class="empty-icon">👥</div>Sin clientes registrados</div>';return;}
-  container.innerHTML=clients.map(([k,c])=>`<div class="driver-card" style="flex-direction:column;align-items:flex-start;gap:8px;cursor:default"><div style="display:flex;align-items:center;gap:10px;width:100%"><div class="driver-avatar">${initials(c.name)}</div><div class="driver-info"><div class="driver-name">${c.name||'—'}</div><div class="driver-sub">${c.phone||'—'} · ${c.insurance||'Sin seguro'}</div></div></div><div style="display:flex;align-items:center;gap:6px;width:100%"><span style="flex:1"></span><button class="btn btn-ghost btn-sm" onclick="editClient('${k}')">✏️ Editar</button></div></div>`).join('');
+  container.innerHTML=clients.map(([k,c])=>`<div class="driver-card" style="flex-direction:column;align-items:flex-start;gap:8px;cursor:default"><div style="display:flex;align-items:center;gap:10px;width:100%"><div class="driver-avatar">${initials(c.name)}</div><div class="driver-info"><div class="driver-name">${c.name||'—'}</div><div class="driver-sub">${c.phone||'—'} · ${c.insurance||'Sin seguro'}</div></div></div><div style="display:flex;align-items:center;gap:6px;width:100%"><span style="flex:1"></span>${c.portalUser?`<span style="font-size:11px;color:var(--green);background:rgba(34,197,94,.1);padding:2px 8px;border-radius:8px;border:1px solid var(--green)">🔑 ${c.portalUser}</span>`:''}<button class="btn btn-ghost btn-sm" onclick="openClientPortalModal('${k}')">🔑 Portal</button><button class="btn btn-ghost btn-sm" onclick="editClient('${k}')">✏️ Editar</button></div></div>`).join('');
 }
 function openClientModal(){openModal('client-modal');}
 async function saveClient(){
@@ -1583,14 +1509,73 @@ async function saveClient(){
   closeModal('client-modal');showToast('✅ Cliente guardado');
 }
 
-// ═══════════════════════════════════════════════════════
-// DRIVERS PAGE
-// ═══════════════════════════════════════════════════════
+// ═══ CLIENT PORTAL ACCESS — NUEVO ═══
+let _portalClientKey = null;
+function openClientPortalModal(clientKey){
+  _portalClientKey = clientKey;
+  const c = STATE.allClients[clientKey];
+  if(!c)return;
+  document.getElementById('cp-client-name').textContent = c.name||clientKey;
+  document.getElementById('cp-username').value = c.portalUser||'';
+  document.getElementById('cp-password').value = '';
+  document.getElementById('cp-status').value = c.portalActive===false?'false':'true';
+  const infoEl = document.getElementById('cp-current-info');
+  if(c.portalUser){
+    infoEl.style.display='block';
+    infoEl.textContent = `✅ Usuario activo: ${c.portalUser}`;
+  } else {
+    infoEl.style.display='none';
+  }
+  openModal('client-portal-modal');
+}
+async function saveClientPortalAccess(){
+  const key = _portalClientKey;
+  if(!key)return;
+  const username = document.getElementById('cp-username').value.trim().toLowerCase();
+  const password = document.getElementById('cp-password').value;
+  const active = document.getElementById('cp-status').value === 'true';
+  const c = STATE.allClients[key];
+  if(!username){ showToast('Usuario requerido','error'); return; }
+  if(!password && !c.portalUser){ showToast('Contraseña requerida para cuenta nueva','error'); return; }
+  const portalData = {
+    name: c.name||'',
+    phone: c.phone||'',
+    email: c.email||'',
+    address: c.address||'',
+    clientKey: key,
+    active: active,
+    updatedAt: Date.now(),
+  };
+  if(password){
+    const hash = await sha256(password);
+    portalData.passwordHash = hash;
+  }
+  if(c.portalUser && c.portalUser !== username){
+    await db.ref(`bookingClients/${c.portalUser}`).remove();
+  }
+  await db.ref(`bookingClients/${username}`).update(portalData);
+  await db.ref(`clients/${key}`).update({ portalUser: username, portalActive: active });
+  closeModal('client-portal-modal');
+  showToast(`✅ Acceso portal creado para ${username}`);
+}
+async function removeClientPortalAccess(){
+  const key = _portalClientKey;
+  if(!key)return;
+  const c = STATE.allClients[key];
+  if(!c||!c.portalUser){ showToast('Este cliente no tiene acceso portal','error'); return; }
+  if(!confirm(`¿Eliminar acceso portal de ${c.name}?`))return;
+  await db.ref(`bookingClients/${c.portalUser}`).remove();
+  await db.ref(`clients/${key}`).update({ portalUser: null, portalActive: false });
+  closeModal('client-portal-modal');
+  showToast('Acceso portal eliminado');
+}
+
+// ═══ DRIVERS PAGE ═══
 function renderDriversPage(){
   const drivers=Object.entries(STATE.allDrivers);
   const container=document.getElementById('drivers-list');if(!container)return;
   if(drivers.length===0){container.innerHTML='<div class="empty-state"><div class="empty-icon">👤</div>Sin conductores registrados</div>';return;}
-  container.innerHTML=drivers.map(([k,d])=>`<div class="driver-card" style="flex-direction:column;align-items:flex-start;gap:8px;cursor:default"><div style="display:flex;align-items:center;gap:10px;width:100%"><div class="driver-avatar">${initials(d.name)}</div><div class="driver-info"><div class="driver-name">${d.name||k}</div><div class="driver-sub">${getVehicleStr(d)} · ${d.plate||'—'}</div></div>${d.location&&Date.now()-(d.location.updatedAt||0)<300000?'<span style="font-size:10px;color:var(--green);margin-left:auto">📍</span>':''}</div><div style="display:flex;align-items:center;gap:6px;width:100%">${statusBadge(d.status||'available')}<span style="flex:1"></span><button class="btn btn-ghost btn-sm" onclick="loginAsDriver('${k}')">👁 Ver app</button><button class="btn btn-ghost btn-sm" onclick="editDriver('${k}')">✏️ Editar</button><button class="btn btn-ghost btn-sm" onclick="resetDriverPassword('${k}','${(d.name||k).replace(/'/g,'')}')" >🔑 Reset</button></div></div>`).join('');
+  container.innerHTML=drivers.map(([k,d])=>`<div class="driver-card" style="flex-direction:column;align-items:flex-start;gap:8px;cursor:default"><div style="display:flex;align-items:center;gap:10px;width:100%"><div class="driver-avatar">${initials(d.name)}</div><div class="driver-info"><div class="driver-name">${d.name||k}</div><div class="driver-sub">${getVehicleStr(d)} · ${d.plate||'—'}</div></div>${d.location&&Date.now()-(d.location.updatedAt||0)<300000?'<span style="font-size:10px;color:var(--green);margin-left:auto">📍</span>':''}</div><div style="display:flex;align-items:center;gap:6px;width:100%">${statusBadge(d.status||'available')}<span style="flex:1"></span><button class="btn btn-ghost btn-sm" onclick="loginAsDriver('${k}')">👁 Ver app</button><button class="btn btn-ghost btn-sm" onclick="editDriver('${k}')">✏️ Editar</button><button class="btn btn-ghost btn-sm" onclick="resetDriverPassword('${k}','${(d.name||k).replace(/'/g,'')}')">🔑 Reset</button></div></div>`).join('');
 }
 function openDriverModal(){document.getElementById('drv-modal-title').textContent='+ Nuevo Conductor';openModal('driver-modal');}
 let _resetDriverKey = null;
@@ -1606,7 +1591,6 @@ async function confirmResetPassword(){
   const adminAuth = document.getElementById('reset-admin-auth').value;
   const newPass = document.getElementById('reset-new-pass').value.trim();
   const confirmPass = document.getElementById('reset-confirm-pass').value.trim();
-  // Verificar clave admin
   const hash = await sha256(adminAuth);
   if(hash !== ADMIN_CREDENTIALS.passHash){showToast('Clave de admin incorrecta','error');return;}
   if(!newPass||newPass.length<4){showToast('Mínimo 4 caracteres','error');return;}
@@ -1625,11 +1609,8 @@ async function saveDriver(){
   closeModal('driver-modal');showToast(`✅ Conductor ${name} guardado`);
 }
 
-// ═══════════════════════════════════════════════════════
-// SERVICE CATALOG
-// ═══════════════════════════════════════════════════════
+// ═══ SERVICE CATALOG ═══
 let allCatalogServices = {};
-
 function loadCatalog() {
   db.ref('catalog').on('value', snap => {
     allCatalogServices = snap.val() || {};
@@ -1637,7 +1618,6 @@ function loadCatalog() {
     populateServiceSelect();
   });
 }
-
 function renderCatalogPage() {
   const container = document.getElementById('catalog-list');
   if (!container) return;
@@ -1647,7 +1627,7 @@ function renderCatalogPage() {
     return;
   }
   container.innerHTML = services.map(([k, s]) => `
-    <div style="background:var(--bg2);border:1px solid ${s.active!==false?'var(--border)':'var(--border)'};border-radius:12px;padding:16px;opacity:${s.active!==false?1:0.5}">
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px;opacity:${s.active!==false?1:0.5}">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
         <div style="font-size:15px;font-weight:700">${s.name||'—'}</div>
         <div style="font-size:18px;font-weight:800;color:var(--green)">$${s.price||0}</div>
@@ -1663,7 +1643,6 @@ function renderCatalogPage() {
     </div>
   `).join('');
 }
-
 function populateServiceSelect() {
   const sel = document.getElementById('nt-service');
   if (!sel) return;
@@ -1671,17 +1650,9 @@ function populateServiceSelect() {
   if (active.length > 0) {
     sel.innerHTML = active.map(([k,s]) => `<option value="${s.name} — $${s.price}">${s.name} — $${s.price}</option>`).join('');
   } else {
-    sel.innerHTML = `
-      <option>Wheelchair Sencillo — $65</option>
-      <option>Wheelchair Premium — $95</option>
-      <option>Airport Transfer — $120</option>
-      <option>Non-Emergency Medical — $85</option>
-      <option>Senior Assisted — $75</option>
-      <option>Group Transfer — $200</option>
-    `;
+    sel.innerHTML = `<option>Wheelchair Sencillo — $65</option><option>Wheelchair Premium — $95</option><option>Airport Transfer — $120</option><option>Non-Emergency Medical — $85</option><option>Senior Assisted — $75</option><option>Group Transfer — $200</option>`;
   }
 }
-
 function openCatalogModal() {
   document.getElementById('catalog-modal-title').textContent = '+ Nuevo servicio';
   document.getElementById('cat-edit-key').value = '';
@@ -1691,7 +1662,6 @@ function openCatalogModal() {
   document.getElementById('cat-active').value = 'true';
   openModal('catalog-modal');
 }
-
 function editCatalogService(key) {
   const s = allCatalogServices[key];
   if (!s) return;
@@ -1703,7 +1673,6 @@ function editCatalogService(key) {
   document.getElementById('cat-active').value = s.active !== false ? 'true' : 'false';
   openModal('catalog-modal');
 }
-
 async function saveCatalogService() {
   const key = document.getElementById('cat-edit-key').value;
   const name = document.getElementById('cat-name').value.trim();
@@ -1721,18 +1690,14 @@ async function saveCatalogService() {
   }
   closeModal('catalog-modal');
 }
-
 async function deleteCatalogService(key, name) {
   if (!confirm(`¿Eliminar el servicio "${name}"?`)) return;
   await db.ref(`catalog/${key}`).remove();
   showToast(`Servicio eliminado`);
 }
 
-// ═══════════════════════════════════════════════════════
-// REASIGNAR VIAJE
-// ═══════════════════════════════════════════════════════
+// ═══ REASSIGN ═══
 let reassignTripKey = null;
-
 function openReassign(tripKey) {
   const t = STATE.allTrips[tripKey];
   if (!t) return;
@@ -1741,15 +1706,12 @@ function openReassign(tripKey) {
   document.getElementById('reassign-trip-id').textContent = `#${t.id || tripKey.slice(-4)}`;
   document.getElementById('reassign-client').textContent = t.clientName || '—';
   document.getElementById('reassign-current-driver').textContent = t.driverName || '—';
-  // Poblar select con todos los conductores excepto el actual
   const sel = document.getElementById('reassign-driver-sel');
   const drivers = Object.entries(STATE.allDrivers);
-  sel.innerHTML = drivers.length === 0 ? '<option>Sin conductores</option>' :
-    drivers.map(([k,d]) => `<option value="${k}">${d.name||k} — ${getVehicleStr(d)}</option>`).join('');
+  sel.innerHTML = drivers.length === 0 ? '<option>Sin conductores</option>' : drivers.map(([k,d]) => `<option value="${k}">${d.name||k} — ${getVehicleStr(d)}</option>`).join('');
   document.getElementById('reassign-note').value = '';
   openModal('reassign-modal');
 }
-
 async function confirmReassign() {
   if (!reassignTripKey) return;
   const sel = document.getElementById('reassign-driver-sel');
@@ -1757,24 +1719,16 @@ async function confirmReassign() {
   const driverName = sel.options[sel.selectedIndex].text.split(' — ')[0];
   const note = document.getElementById('reassign-note').value;
   const oldTrip = STATE.allTrips[reassignTripKey];
-  // Liberar conductor anterior
   if (oldTrip?.driverKey && oldTrip.driverKey !== driverKey) {
     await db.ref(`drivers/${oldTrip.driverKey}/status`).set('available');
   }
-  await db.ref(`trips/${reassignTripKey}`).update({
-    driverKey, driverName, status: 'assigned',
-    assignedAt: Date.now(),
-    adminNote: note || oldTrip?.adminNote || '',
-    reassignedAt: Date.now(),
-  });
+  await db.ref(`trips/${reassignTripKey}`).update({driverKey,driverName,status:'assigned',assignedAt:Date.now(),adminNote:note||oldTrip?.adminNote||'',reassignedAt:Date.now()});
   await db.ref(`drivers/${driverKey}/status`).set('busy');
   closeModal('reassign-modal');
   showToast(`✅ Viaje reasignado a ${driverName}`);
 }
 
-// ═══════════════════════════════════════════════════════
-// REPORTS
-// ═══════════════════════════════════════════════════════
+// ═══ REPORTS ═══
 function setReportPeriod(p,el){STATE.reportPeriod=p;document.querySelectorAll('#page-reports .chip').forEach(c=>c.classList.remove('active'));el.classList.add('active');renderReports();}
 function renderReports(){
   const trips=Object.values(STATE.allTrips).filter(t=>['completed','approved'].includes(t.status));
@@ -1793,11 +1747,9 @@ function renderReports(){
   document.getElementById('rep-gross').textContent=`$${income.toFixed(2)}`;
   document.getElementById('rep-op').textContent=`-$${expenses.toFixed(2)}`;
   document.getElementById('rep-net').textContent=`$${(income-expenses).toFixed(2)}`;
-  // Daily chart
   const byDay={};filtered.forEach(t=>{const d=new Date(t.completedAt).toLocaleDateString('es',{weekday:'short'});byDay[d]=(byDay[d]||0)+(parseFloat(t.price)||0);});
   const maxVal=Math.max(...Object.values(byDay),1);
   document.getElementById('daily-chart').innerHTML=Object.entries(byDay).slice(-7).map(([d,v])=>`<div class="chart-bar-row"><div class="chart-bar-label">${d}</div><div class="chart-bar-outer"><div class="chart-bar-inner" style="width:${(v/maxVal*100).toFixed(0)}%"></div></div><div class="chart-bar-val">$${v.toFixed(0)}</div></div>`).join('');
-  // Drivers ranking
   const byDriver={};filtered.forEach(t=>{if(t.driverName){byDriver[t.driverName]=(byDriver[t.driverName]||0)+(parseFloat(t.price)||0);}});
   const sorted=Object.entries(byDriver).sort((a,b)=>b[1]-a[1]);
   document.getElementById('driver-ranking').innerHTML=sorted.length===0?'<div class="empty-state">Sin datos</div>':sorted.map(([name,total],i)=>`<div class="driver-rank-row"><div class="rank-medal ${i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'rank-n'}">${i+1}</div><div style="flex:1"><div style="font-size:13px;font-weight:600">${name}</div></div><div style="font-weight:700;color:var(--green)">$${total.toFixed(0)}</div></div>`).join('');
@@ -1805,9 +1757,7 @@ function renderReports(){
 function exportReportPDF(){showToast('Exportando reporte...');}
 function exportDashboard(){showToast('Exportando dashboard...');}
 
-// ═══════════════════════════════════════════════════════
-// WHATSAPP
-// ═══════════════════════════════════════════════════════
+// ═══ WHATSAPP ═══
 function renderWADrivers(){
   const container=document.getElementById('wa-driver-list');if(!container)return;
   const drivers=Object.entries(STATE.allDrivers);
@@ -1817,9 +1767,7 @@ function renderWADrivers(){
 function sendWAAll(){const msg=document.getElementById('wa-broadcast')?.value||document.getElementById('wa-msg')?.value||'';if(!msg){openModal('wa-modal');return;}doSendWAAll();}
 function doSendWAAll(){const msg=document.getElementById('wa-msg')?.value||'';if(!msg){showToast('Escribe un mensaje','error');return;}Object.entries(STATE.allDrivers).forEach(([k,d])=>{const phone=(d.phone||DRIVER_PHONES[k]||'').replace(/\D/g,'');if(phone)setTimeout(()=>window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`,'_blank'),300);});closeModal('wa-modal');showToast('✅ Mensajes enviados');}
 
-// ═══════════════════════════════════════════════════════
-// SETTINGS
-// ═══════════════════════════════════════════════════════
+// ═══ SETTINGS ═══
 function renderFareRangesUI(){
   const container=document.getElementById('fare-ranges-list');if(!container)return;
   container.innerHTML=FARE_RANGES.map((r,i)=>`<div style="display:flex;gap:8px;align-items:center"><input type="number" value="${r.from}" style="width:70px" onchange="FARE_RANGES[${i}].from=parseFloat(this.value)"><span style="color:var(--text3);font-size:12px">a</span><input type="number" value="${r.to}" style="width:70px" onchange="FARE_RANGES[${i}].to=parseFloat(this.value)"><span style="color:var(--text3);font-size:12px">mi → $</span><input type="number" value="${r.price}" step="0.50" style="width:70px" onchange="FARE_RANGES[${i}].price=parseFloat(this.value)"><span style="color:var(--text3);font-size:12px">/mi</span><button class="btn btn-red btn-sm" onclick="FARE_RANGES.splice(${i},1);renderFareRangesUI()">✕</button></div>`).join('');
@@ -1857,9 +1805,7 @@ async function saveRateDefaults(){
 }
 async function registerRateCobro(){showToast(`✅ Cobro registrado: ${document.getElementById('rb-total').textContent}`);}
 
-// ═══════════════════════════════════════════════════════
-// DRIVER VIEW (overlay admin)
-// ═══════════════════════════════════════════════════════
+// ═══ DRIVER VIEW ═══
 let _drvTimer=null;
 function showDriverView(){document.getElementById('driver-overlay').classList.add('show');if(STATE.driverLogged&&STATE.currentDriverData){renderDriverDashboard();}else{document.getElementById('drv-login').style.display='block';document.getElementById('drv-dashboard').style.display='none';}}
 function loginAsDriver(driverKey){const d=STATE.allDrivers[driverKey];if(!d)return;STATE.driverLogged=true;STATE.currentDriverKey=driverKey;STATE.currentDriverData=d;document.getElementById('driver-overlay').classList.add('show');renderDriverDashboard();}
@@ -1897,48 +1843,21 @@ function listenDriverTrip(){
     const list=document.getElementById('drv-trips-list');
     const noTrip=document.getElementById('drv-no-trip');
     const badge=document.getElementById('drv-badge');
-    if(active.length===0){
-      list.innerHTML='';
-      noTrip.style.display='block';
-      badge.style.background='var(--green2)';badge.textContent='Disponible';
-    } else {
+    if(active.length===0){list.innerHTML='';noTrip.style.display='block';badge.style.background='var(--green2)';badge.textContent='Disponible';}
+    else{
       noTrip.style.display='none';
       badge.style.background='var(--yellow)';badge.style.color='#000';badge.textContent=`${active.length} viaje(s)`;
       list.innerHTML=active.map(t=>{
         const statusMap={assigned:'📋 Asignado',onway:'🚗 En camino',arrived:'📍 En recogida',started:'🚗 En ruta'};
         const statusColor={assigned:'var(--text3)',onway:'var(--accent)',arrived:'var(--yellow)',started:'var(--green)'};
         const datetime=t.datetime?new Date(t.datetime).toLocaleString('es',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):'—';
-        return `<div style="background:var(--bg3);border:1px solid ${t.status==='started'?'var(--yellow)':'var(--border)'};border-radius:12px;padding:14px;margin-bottom:10px">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-            <span style="font-size:14px;font-weight:700">#${t.id||t._key.slice(-4)}</span>
-            <span style="font-size:12px;font-weight:700;color:${statusColor[t.status]||'var(--text3)'}">${statusMap[t.status]||t.status}</span>
-          </div>
-          <div style="font-size:13px;color:var(--text2);margin-bottom:6px">🕐 ${datetime}</div>
-          <div style="font-size:13px;font-weight:600;margin-bottom:6px">👤 ${t.clientName||'—'}</div>
-          <div style="font-size:12.5px;color:var(--text2);margin-bottom:3px">🟢 ${t.origin||'—'}</div>
-          <div style="font-size:12.5px;color:var(--text2);margin-bottom:6px">🔴 ${t.destination||'—'}</div>
-          <div style="font-size:12px;color:var(--text3)">${t.service||'—'}</div>
-          ${t.adminNote?`<div style="margin-top:8px;padding:6px 10px;background:rgba(245,158,11,.08);border-radius:8px;font-size:12px;color:#fcd34d">📋 ${t.adminNote}</div>`:''}
-          ${t.miles?`<div style="margin-top:6px;font-size:12px;color:var(--green)">📍 ${t.miles} mi${t.gpsTracked?' GPS':''}</div>`:''}
-        </div>`;
+        return `<div style="background:var(--bg3);border:1px solid ${t.status==='started'?'var(--yellow)':'var(--border)'};border-radius:12px;padding:14px;margin-bottom:10px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><span style="font-size:14px;font-weight:700">#${t.id||t._key.slice(-4)}</span><span style="font-size:12px;font-weight:700;color:${statusColor[t.status]||'var(--text3)'}">${statusMap[t.status]||t.status}</span></div><div style="font-size:13px;color:var(--text2);margin-bottom:6px">🕐 ${datetime}</div><div style="font-size:13px;font-weight:600;margin-bottom:6px">👤 ${t.clientName||'—'}</div><div style="font-size:12.5px;color:var(--text2);margin-bottom:3px">🟢 ${t.origin||'—'}</div><div style="font-size:12.5px;color:var(--text2);margin-bottom:6px">🔴 ${t.destination||'—'}</div><div style="font-size:12px;color:var(--text3)">${t.service||'—'}</div>${t.adminNote?`<div style="margin-top:8px;padding:6px 10px;background:rgba(245,158,11,.08);border-radius:8px;font-size:12px;color:#fcd34d">📋 ${t.adminNote}</div>`:''} ${t.miles?`<div style="margin-top:6px;font-size:12px;color:var(--green)">📍 ${t.miles} mi${t.gpsTracked?' GPS':''}</div>`:''}</div>`;
       }).join('');
     }
   });
 }
-async function drvArrive(){if(!STATE.activeTripKey)return;await db.ref(`trips/${STATE.activeTripKey}`).update({status:'arrived',arrivedAt:Date.now()});}
-async function drvStart(){if(!STATE.activeTripKey)return;await db.ref(`trips/${STATE.activeTripKey}`).update({status:'started',startedAt:Date.now()});}
-async function drvFinish(){
-  if(!STATE.activeTripKey)return;
-  const miles=document.getElementById('drv-miles').value||'0';
-  const obs=document.getElementById('drv-obs').value||'';
-  await db.ref(`trips/${STATE.activeTripKey}`).update({status:'completed',completedAt:Date.now(),miles,driverNotes:obs,driverName:STATE.currentDriverData?.name||STATE.currentDriverKey});
-  await db.ref(`drivers/${STATE.currentDriverKey}/status`).set('available');
-  clearInterval(_drvTimer);showToast('✅ Servicio enviado para aprobación');
-}
 
-// ═══════════════════════════════════════════════════════
-// MODALS / HELPERS
-// ═══════════════════════════════════════════════════════
+// ═══ MODALS / HELPERS ═══
 function openModal(id){document.getElementById(id).classList.add('show');}
 function closeModal(id){document.getElementById(id).classList.remove('show');}
 function toggleNotif(){document.getElementById('notif-panel').classList.toggle('show');}
@@ -1947,9 +1866,6 @@ function initials(name){if(!name)return'?';const p=name.trim().split(' ');return
 let _toastTimer;
 function showToast(msg,type='success'){const t=document.getElementById('toast');t.textContent=msg;t.className=`toast show${type==='error'?' error':''}`;clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>t.classList.remove('show'),3500);}
 
-// ═══════════════════════════════════════════════════════
-// recalcApprove — recalcula total al editar campos
-// ═══════════════════════════════════════════════════════
 function recalcApprove(){
   const sp=parseFloat(document.getElementById('approve-service-price')?.value)||0;
   const bz=parseFloat(document.getElementById('approve-banderazo')?.value)||0;
@@ -1962,9 +1878,6 @@ function recalcApprove(){
   if(el)el.textContent=`$${total}`;
 }
 
-// ═══════════════════════════════════════════════════════
-// editDriver / saveDriverEdit
-// ═══════════════════════════════════════════════════════
 function editDriver(key){
   const d=STATE.allDrivers[key];if(!d)return;
   document.getElementById('drv-modal-title').textContent='✏️ Editar Conductor';
@@ -1974,18 +1887,10 @@ function editDriver(key){
   document.getElementById('drv-license').value=d.license||'';
   document.getElementById('drv-plate').value=d.plate||'';
   const v=d.vehicle||{};
-  if(typeof v==='object'){
-    document.getElementById('drv-vtype').value=v.type||v.model||'Toyota Sienna';
-    document.getElementById('drv-vcolor').value=v.color||'';
-    document.getElementById('drv-vyear').value=v.year||'';
-  } else {
-    document.getElementById('drv-vtype').value=String(v)||'Toyota Sienna';
-    document.getElementById('drv-vcolor').value='';
-    document.getElementById('drv-vyear').value='';
-  }
+  if(typeof v==='object'){document.getElementById('drv-vtype').value=v.type||v.model||'Toyota Sienna';document.getElementById('drv-vcolor').value=v.color||'';document.getElementById('drv-vyear').value=v.year||'';}
+  else{document.getElementById('drv-vtype').value=String(v)||'Toyota Sienna';document.getElementById('drv-vcolor').value='';document.getElementById('drv-vyear').value='';}
   document.getElementById('drv-username').value=key;
   document.getElementById('drv-password').value='';
-  // Cambiar botón guardar a saveDriverEdit
   const saveBtn=document.querySelector('#driver-modal .modal-footer .btn-primary');
   if(saveBtn){saveBtn.setAttribute('onclick',`saveDriverEdit('${key}')`);saveBtn.textContent='✓ Guardar cambios';}
   openModal('driver-modal');
@@ -1997,19 +1902,14 @@ async function saveDriverEdit(key){
   const newPass=document.getElementById('drv-password').value;
   if(newPass&&newPass.length>=4){const h=await sha256(newPass);updates.passwordHash=h;}
   await db.ref(`drivers/${key}`).update(updates);
-  // Restaurar botón
   const saveBtn=document.querySelector('#driver-modal .modal-footer .btn-primary');
   if(saveBtn){saveBtn.setAttribute('onclick','saveDriver()');saveBtn.textContent='✓ Guardar conductor';}
   closeModal('driver-modal');
   showToast(`✅ Conductor ${name} actualizado`);
 }
 
-// ═══════════════════════════════════════════════════════
-// editClient / saveClientEdit
-// ═══════════════════════════════════════════════════════
 function editClient(key){
   const c=STATE.allClients[key];if(!c)return;
-  // Reusar modal de cliente con título diferente
   document.querySelector('#client-modal .modal-title').textContent='✏️ Editar Cliente';
   document.getElementById('cli-name').value=c.name||'';
   document.getElementById('cli-phone').value=c.phone||'';
@@ -2018,7 +1918,6 @@ function editClient(key){
   document.getElementById('cli-insurance').value=c.insurance||'';
   document.getElementById('cli-policy').value=c.policy||'';
   document.getElementById('cli-notes').value=c.notes||'';
-  // Cambiar botón guardar a saveClientEdit
   const saveBtn=document.querySelector('#client-modal .modal-footer .btn-primary');
   if(saveBtn)saveBtn.setAttribute('onclick',`saveClientEdit('${key}')`);
   openModal('client-modal');
@@ -2027,7 +1926,6 @@ async function saveClientEdit(key){
   const name=document.getElementById('cli-name').value.trim();
   if(!name){showToast('Nombre requerido','error');return;}
   await db.ref(`clients/${key}`).update({name,phone:document.getElementById('cli-phone').value,email:document.getElementById('cli-email').value,address:document.getElementById('cli-addr').value,insurance:document.getElementById('cli-insurance').value,policy:document.getElementById('cli-policy').value,notes:document.getElementById('cli-notes').value,updatedAt:Date.now()});
-  // Restaurar modal
   document.querySelector('#client-modal .modal-title').textContent='+ Nuevo Cliente';
   const saveBtn=document.querySelector('#client-modal .modal-footer .btn-primary');
   if(saveBtn)saveBtn.setAttribute('onclick','saveClient()');
@@ -2038,92 +1936,7 @@ async function saveClientEdit(key){
 document.addEventListener('click',e=>{if(!e.target.closest('#notif-btn')&&!e.target.closest('#notif-panel'))document.getElementById('notif-panel').classList.remove('show');});
 </script>
 
-<!-- Google Maps API -->
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAkD6GOLCOKJkE0kkhhTfFRro9O-HONWg4&callback=initAdminMap" async defer></script>
-
-<!-- CATALOG MODAL -->
-<div class="modal-overlay" id="catalog-modal">
-  <div class="modal">
-    <div class="modal-header">
-      <div class="modal-title" id="catalog-modal-title">+ Nuevo servicio</div>
-      <div class="modal-close" onclick="closeModal('catalog-modal')">×</div>
-    </div>
-    <div class="modal-body">
-      <input type="hidden" id="cat-edit-key">
-      <div class="form-group"><label>Nombre del servicio</label><input id="cat-name" placeholder="Wheelchair Sencillo"></div>
-      <div class="form-group"><label>Precio base (USD)</label><input id="cat-price" type="number" placeholder="65"></div>
-      <div class="form-group"><label>Descripción (opcional)</label><textarea id="cat-desc" rows="2" placeholder="Descripción para el admin..."></textarea></div>
-      <div class="form-group">
-        <label>Estado</label>
-        <select id="cat-active">
-          <option value="true">✅ Activo</option>
-          <option value="false">❌ Inactivo</option>
-        </select>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('catalog-modal')">Cancelar</button>
-      <button class="btn btn-primary" onclick="saveCatalogService()">✓ Guardar servicio</button>
-    </div>
-  </div>
-</div>
-
-<!-- REASIGNAR MODAL -->
-<div class="modal-overlay" id="reassign-modal">
-  <div class="modal">
-    <div class="modal-header">
-      <div class="modal-title">🔄 Reasignar viaje</div>
-      <div class="modal-close" onclick="closeModal('reassign-modal')">×</div>
-    </div>
-    <div class="modal-body">
-      <div style="background:var(--bg3);border-radius:8px;padding:12px;margin-bottom:14px;font-size:13px">
-        <div><strong>Viaje:</strong> <span id="reassign-trip-id">—</span></div>
-        <div><strong>Cliente:</strong> <span id="reassign-client">—</span></div>
-        <div><strong>Conductor actual:</strong> <span id="reassign-current-driver" style="color:var(--yellow)">—</span></div>
-      </div>
-      <div class="form-group"><label>Nuevo conductor</label><select id="reassign-driver-sel"><option>Cargando...</option></select></div>
-      <div class="form-group"><label>Nota para el nuevo conductor (opcional)</label><textarea id="reassign-note" rows="2" placeholder="Instrucciones especiales..."></textarea></div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('reassign-modal')">Cancelar</button>
-      <button class="btn btn-primary" onclick="confirmReassign()">🔄 Reasignar</button>
-    </div>
-  </div>
-</div>
-
-<!-- RESET PASSWORD MODAL -->
-<div class="modal-overlay" id="reset-pass-modal">
-  <div class="modal">
-    <div class="modal-header">
-      <div class="modal-title">🔑 Restablecer contraseña</div>
-      <div class="modal-close" onclick="closeModal('reset-pass-modal')">×</div>
-    </div>
-    <div class="modal-body">
-      <div style="background:var(--bg3);border-radius:8px;padding:12px;margin-bottom:14px;font-size:13px">
-        <div><strong>Conductor:</strong> <span id="reset-driver-name">—</span></div>
-      </div>
-      <div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:8px;padding:10px;font-size:12.5px;color:#fcd34d;margin-bottom:14px">
-        ⚠️ Esta acción cambiará la contraseña del conductor. Comunícale la nueva contraseña.
-      </div>
-      <div class="form-group">
-        <label>Clave de autorización admin</label>
-        <input id="reset-admin-auth" type="password" placeholder="Ingresa tu clave de admin">
-      </div>
-      <div class="form-group">
-        <label>Nueva contraseña</label>
-        <input id="reset-new-pass" type="password" placeholder="Mínimo 4 caracteres">
-      </div>
-      <div class="form-group">
-        <label>Confirmar nueva contraseña</label>
-        <input id="reset-confirm-pass" type="password" placeholder="Repite la contraseña">
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('reset-pass-modal')">Cancelar</button>
-      <button class="btn btn-primary" onclick="confirmResetPassword()">🔑 Confirmar cambio</button>
-    </div>
-  </div>
-</div>
 
 </body>
 </html>
