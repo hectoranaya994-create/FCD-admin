@@ -1160,10 +1160,19 @@ function renderTripsPage(){
   const entries=Object.entries(STATE.allTrips);
   const active=entries.filter(([k,t])=>['assigned','onway','arrived','started','in_progress'].includes(t.status));
   const pending=entries.filter(([k,t])=>t.status==='pending').sort((a,b)=>{
-    const aTime=new Date(a[1].datetime||a[1].createdAt||0).getTime();
-    const bTime=new Date(b[1].datetime||b[1].createdAt||0).getTime();
-    if(bTime!==aTime)return bTime-aTime;
-    // misma fecha: ida antes que vuelta
+    // Para viajes de vuelta, usar la fecha de su ida ligada como referencia de orden
+    function getSortTime(entry){
+      const [k,t]=entry;
+      if(t.tripType==='vuelta'&&t.linkedTripId){
+        const idaTrip=Object.values(STATE.allTrips).find(lt=>lt.id===t.linkedTripId);
+        if(idaTrip&&idaTrip.datetime) return new Date(idaTrip.datetime).getTime();
+      }
+      return new Date(t.datetime||t.createdAt||0).getTime();
+    }
+    const aTime=getSortTime(a);
+    const bTime=getSortTime(b);
+    if(bTime!==aTime) return bTime-aTime;
+    // misma fecha base: ida antes que vuelta
     const aType=a[1].tripType==='vuelta'?1:0;
     const bType=b[1].tripType==='vuelta'?1:0;
     return aType-bType;
