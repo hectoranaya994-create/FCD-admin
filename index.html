@@ -1159,7 +1159,15 @@ function updateTripsBadge(){const pending=Object.values(STATE.allTrips).filter(t
 function renderTripsPage(){
   const entries=Object.entries(STATE.allTrips);
   const active=entries.filter(([k,t])=>['assigned','onway','arrived','started','in_progress'].includes(t.status));
-  const pending=entries.filter(([k,t])=>t.status==='pending').sort((a,b)=>(b[1].createdAt||0)-(a[1].createdAt||0));
+  const pending=entries.filter(([k,t])=>t.status==='pending').sort((a,b)=>{
+    const aTime=new Date(a[1].datetime||a[1].createdAt||0).getTime();
+    const bTime=new Date(b[1].datetime||b[1].createdAt||0).getTime();
+    if(bTime!==aTime)return bTime-aTime;
+    // misma fecha: ida antes que vuelta
+    const aType=a[1].tripType==='vuelta'?1:0;
+    const bType=b[1].tripType==='vuelta'?1:0;
+    return aType-bType;
+  });
   const completed=entries.filter(([k,t])=>['completed','approved'].includes(t.status)).sort((a,b)=>(b[1].completedAt||b[1].createdAt||0)-(a[1].completedAt||a[1].createdAt||0));
   const ab=document.getElementById('trips-active-body');
   if(active.length===0){ab.innerHTML=`<tr><td colspan="8" class="empty-state">Sin viajes activos</td></tr>`;}
