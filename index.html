@@ -1267,20 +1267,109 @@ function renderPendingApprovals(){
   const lp=document.getElementById('last-payments-list');
   if(lp){const last=approved.sort((a,b)=>(b.completedAt||0)-(a.completedAt||0)).slice(0,5);lp.innerHTML=last.length===0?'<div class="empty-state">Sin pagos registrados</div>':`<table style="width:100%;font-size:12.5px;border-collapse:collapse">${last.map(t=>`<tr><td style="padding:6px 0;border-top:1px solid var(--border)">${t.clientName||'—'}</td><td>${t.paymentMethod||'—'}</td><td style="color:var(--green);font-weight:700">$${t.price||0}</td></tr>`).join('')}</table>`;}
 }
-async function approveRoundTrip(idaKey, vueltaKey){
-  const method=prompt('Método de pago (Efectivo/Tarjeta/Zelle/Nequi/Daviplata):','Efectivo');
-  if(!method)return;
+function approveRoundTrip(idaKey, vueltaKey){
   const ida=STATE.allTrips[idaKey];
   const vuelta=STATE.allTrips[vueltaKey];
-  const idaPrice=parseFloat(ida?.price||0);
-  const vueltaPrice=parseFloat(vuelta?.price||0);
-  const total=(idaPrice+vueltaPrice).toFixed(2);
-  if(!confirm(`¿Aprobar ida ($${idaPrice}) + vuelta ($${vueltaPrice}) = Total $${total}?`))return;
+  if(!ida||!vuelta)return;
+
+  function calcTrip(t){
+    const miles=parseFloat(t.miles||0);
+    const rate=getRateForMiles(miles);
+    const bz=DEFAULT_BANDERAZO||3.50;
+    const wait=parseFloat(t.waitMinutes||0)*0.50;
+    let svcPrice=0;
+    const priceInName=parseFloat((t.service||'').match(/\$([\d.]+)/)?.[1]||0);
+    if(priceInName>0){svcPrice=priceInName;}else{
+      const svcNorm=(t.service||'').toLowerCase().trim().split(/[—\-]/)[0].trim();
+      const cm=Object.values(allCatalogServices).find(s=>s.name&&s.name.toLowerCase().trim().includes(svcNorm));
+      if(cm)svcPrice=parseFloat(cm.price)||0;
+    }
+    const total=(svcPrice+bz+(miles>0?miles*rate:0)+wait).toFixed(2);
+    return{svcPrice,bz,miles,rate,wait,total};
+  }
+
+  const idaCalc=calcTrip(ida);
+  const vueltaCalc=calcTrip(vuelta);
+
+  const existing=document.getElementById('rt-approve-overlay');
+  if(existing)document.body.removeChild(existing);
+  const overlay=document.createElement('div');
+  overlay.id='rt-approve-overlay';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;overflow-y:auto';
+
+  function tripBlock(t,calc,label,color){
+    return `<div style="background:var(--bg3);border:1px solid ${color}44;border-radius:10px;padding:12px;margin-bottom:12px">
+      <div style="font-size:12px;font-weight:700;color:${color};margin-bottom:8px">${label} · #${t.id||'—'} · ${t.driverName||'—'}</div>
+      <div style="font-size:12.5px;display:flex;flex-direction:column;gap:4px">
+        <div style="display:flex;justify-content:space-between"><span style="color:var(--text2)">Precio servicio</span><input type="number" id="rt-svc-${label==='→ Ida'?'ida':'vuelta'}" value="${calc.svcPrice}" style="width:80px;text-align:right;background:var(--bg4);border:1px solid var(--border2);color:var(--text);border-radius:6px;padding:3px 7px;font-size:12px" oninput="recalcRT()"></div>
+        <div style="display:flex;justify-content:space-between"><span style="color:var(--text2)">Banderazo</span><input type="number" id="rt-bz-${label==='→ Ida'?'ida':'vuelta'}" value="${calc.bz}" style="width:80px;text-align:right;background:var(--bg4);border:1px solid var(--border2);color:var(--text);border-radius:6px;padding:3px 7px;font-size:12px" oninput="recalcRT()"></div>
+        <div style="display:flex;justify-content:space-between"><span style="color:var(--text2)">Millas</span><input type="number" id="rt-mi-${label==='→ Ida'?'ida':'vuelta'}" value="${calc.miles}" style="width:80px;text-align:right;background:var(--bg4);border:1px solid var(--border2);color:var(--text);border-radius:6px;padding:3px 7px;font-size:12px" oninput="recalcRT()"></div>
+        <div style="display:flex;justify-content:space-between"><span style="color:var(--text2)">Tarifa/mi</span><input type="number" id="rt-rate-${label==='→ Ida'?'ida':'vuelta'}" value="${calc.rate}" style="width:80px;text-align:right;background:var(--bg4);border:1px solid var(--border2);color:var(--text);border-radius:6px;padding:3px 7px;font-size:12px" oninput="recalcRT()"></div>
+        <div style="display:flex;justify-content:space-between"><span style="color:var(--text2)">Espera (min)</span><input type="number" id="rt-wait-${label==='→ Ida'?'ida':'vuelta'}" value="${parseFloat(t.waitMinutes||0)}" style="width:80px;text-align:right;background:var(--bg4);border:1px solid var(--border2);color:var(--text);border-radius:6px;padding:3px 7px;font-size:12px" oninput="recalcRT()"></div>
+        <div style="display:flex;justify-content:space-between;font-weight:700;font-size:13px;padding-top:4px;border-top:1px solid var(--border)"><span>Subtotal</span><span id="rt-sub-${label==='→ Ida'?'ida':'vuelta'}" style="color:var(--green)">$${calc.total}</span></div>
+      </div>
+    </div>`;
+  }
+
+  overlay.innerHTML=`<div style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;width:100%;max-width:500px;overflow:hidden">
+    <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+      <span style="font-size:15px;font-weight:700">✅ Liquidar ida y vuelta</span>
+      <span onclick="document.body.removeChild(document.getElementById('rt-approve-overlay'))" style="cursor:pointer;font-size:18px;color:var(--text3);padding:0 4px">×</span>
+    </div>
+    <div style="padding:16px;max-height:70vh;overflow-y:auto">
+      <div style="background:var(--bg3);border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:13px">
+        <strong>Cliente:</strong> ${ida.clientName||'—'} · <strong>Servicio:</strong> ${ida.service||'—'}
+      </div>
+      ${tripBlock(ida,idaCalc,'→ Ida','#60a5fa')}
+      ${tripBlock(vuelta,vueltaCalc,'🔄 Vuelta','#c084fc')}
+      <div style="display:flex;justify-content:space-between;font-size:18px;font-weight:800;padding:10px 0;border-top:2px solid var(--border2)">
+        <span>Total combinado</span>
+        <span id="rt-total-display" style="color:var(--green)">$${(parseFloat(idaCalc.total)+parseFloat(vueltaCalc.total)).toFixed(2)}</span>
+      </div>
+      <div style="margin-top:12px">
+        <label style="display:block;font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px">Método de pago</label>
+        <select id="rt-method" style="width:100%;background:var(--bg3);border:1px solid var(--border2);color:var(--text);padding:8px 11px;border-radius:8px;font-size:13px">
+          <option>Efectivo</option><option>Tarjeta</option><option>Zelle</option><option>Nequi</option><option>Daviplata</option>
+        </select>
+      </div>
+    </div>
+    <div style="padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end">
+      <button onclick="document.body.removeChild(document.getElementById('rt-approve-overlay'))" style="padding:8px 16px;background:transparent;border:1px solid var(--border2);color:var(--text2);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">Cancelar</button>
+      <button onclick="confirmApproveRoundTrip('${idaKey}','${vueltaKey}')" style="padding:8px 20px;background:var(--green2);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">✅ Aprobar ambos</button>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+
+  window._rtIdaKey=idaKey;window._rtVueltaKey=vueltaKey;
+  recalcRT();
+}
+
+function recalcRT(){
+  function getVal(id){return parseFloat(document.getElementById(id)?.value||0)||0;}
+  function calcSub(suffix){
+    const svc=getVal(`rt-svc-${suffix}`),bz=getVal(`rt-bz-${suffix}`),mi=getVal(`rt-mi-${suffix}`),rate=getVal(`rt-rate-${suffix}`),wait=getVal(`rt-wait-${suffix}`);
+    return (svc+bz+(mi>0?mi*rate:0)+wait*0.50).toFixed(2);
+  }
+  const idaSub=calcSub('ida');
+  const vueltaSub=calcSub('vuelta');
+  const total=(parseFloat(idaSub)+parseFloat(vueltaSub)).toFixed(2);
+  const elIda=document.getElementById('rt-sub-ida');if(elIda)elIda.textContent=`$${idaSub}`;
+  const elVuelta=document.getElementById('rt-sub-vuelta');if(elVuelta)elVuelta.textContent=`$${vueltaSub}`;
+  const elTotal=document.getElementById('rt-total-display');if(elTotal)elTotal.textContent=`$${total}`;
+  window._rtIdaTotal=idaSub;window._rtVueltaTotal=vueltaSub;
+}
+
+async function confirmApproveRoundTrip(idaKey,vueltaKey){
+  const method=document.getElementById('rt-method')?.value||'Efectivo';
+  const idaPrice=window._rtIdaTotal||'0';
+  const vueltaPrice=window._rtVueltaTotal||'0';
+  const total=(parseFloat(idaPrice)+parseFloat(vueltaPrice)).toFixed(2);
+  const ida=STATE.allTrips[idaKey];const vuelta=STATE.allTrips[vueltaKey];
   await db.ref(`trips/${idaKey}`).update({status:'approved',approvedAt:Date.now(),paymentMethod:method,price:idaPrice});
   await db.ref(`trips/${vueltaKey}`).update({status:'approved',approvedAt:Date.now(),paymentMethod:method,price:vueltaPrice,roundTripTotal:total});
-  const idaDriverKey=ida?.driverKey;const vueltaDriverKey=vuelta?.driverKey;
-  if(idaDriverKey)await db.ref(`drivers/${idaDriverKey}/status`).set('available');
-  if(vueltaDriverKey&&vueltaDriverKey!==idaDriverKey)await db.ref(`drivers/${vueltaDriverKey}/status`).set('available');
+  if(ida?.driverKey)await db.ref(`drivers/${ida.driverKey}/status`).set('available');
+  if(vuelta?.driverKey&&vuelta.driverKey!==ida?.driverKey)await db.ref(`drivers/${vuelta.driverKey}/status`).set('available');
+  const overlay=document.getElementById('rt-approve-overlay');if(overlay)document.body.removeChild(overlay);
   showToast(`✅ Ida y vuelta aprobados — Total $${total}`);
 }
 async function registerPayment(){showToast('Pago registrado');}
