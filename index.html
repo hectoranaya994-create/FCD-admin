@@ -1684,12 +1684,12 @@ function renderDriversPage(){
   container.innerHTML=drivers.map(([k,d])=>`<div class="driver-card" style="flex-direction:column;align-items:flex-start;gap:8px;cursor:default;opacity:${d.inactive?0.5:1}"><div style="display:flex;align-items:center;gap:10px;width:100%"><div class="driver-avatar" style="background:${d.inactive?'var(--text3)':'var(--accent)'}">${initials(d.name)}</div><div class="driver-info"><div class="driver-name">${d.name||k}</div><div class="driver-sub">${getVehicleStr(d)} · ${d.plate||'—'}</div></div>${d.inactive?'<span style="font-size:11px;color:var(--text3);background:var(--bg4);padding:2px 8px;border-radius:8px;margin-left:auto">Inactivo</span>':(d.location&&Date.now()-(d.location.updatedAt||0)<300000?'<span style="font-size:10px;color:var(--green);margin-left:auto">📍</span>':'')}</div><div style="display:flex;align-items:center;gap:6px;width:100%;flex-wrap:wrap">${d.inactive?'<span class="badge badge-gray">Inactivo</span>':statusBadge(d.status||'available')}<span style="flex:1"></span>${!d.inactive?`<button class="btn btn-ghost btn-sm" onclick="loginAsDriver('${k}')">👁 Ver app</button>`:''}
 <button class="btn btn-ghost btn-sm" onclick="editDriver('${k}')">✏️ Editar</button><button class="btn btn-ghost btn-sm" onclick="resetDriverPassword('${k}','${(d.name||k).replace(/'/g,'')}')">🔑 Reset</button><button class="btn btn-sm" style="background:${d.inactive?'var(--green2)':'#dc2626'};color:#fff" onclick="toggleDriverActive('${k}',${!d.inactive})">${d.inactive?'✅ Activar':'🚫 Inactivar'}</button></div></div>`).join('');
 }
-async function toggleDriverActive(driverKey, setActive){
+async function toggleDriverActive(driverKey, activate){
   const d=STATE.allDrivers[driverKey];if(!d)return;
   const name=d.name||driverKey;
-  if(!setActive&&!confirm(`¿Inactivar a ${name}? No aparecerá en la asignación de viajes.`))return;
-  await db.ref(`drivers/${driverKey}/inactive`).set(!setActive);
-  showToast(setActive?`✅ ${name} activado`:`🚫 ${name} inactivado`);
+  if(!activate&&!confirm(`¿Inactivar a ${name}? No aparecerá en la asignación de viajes.`))return;
+  await db.ref(`drivers/${driverKey}/inactive`).set(activate?false:true);
+  showToast(activate?`✅ ${name} activado`:`🚫 ${name} inactivado`);
 }
 
 function openDriverModal(){document.getElementById('drv-modal-title').textContent='+ Nuevo Conductor';openModal('driver-modal');}
