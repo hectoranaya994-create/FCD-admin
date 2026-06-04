@@ -1171,7 +1171,7 @@ function renderTripsPage(){
     }
     const aTime=getSortTime(a);
     const bTime=getSortTime(b);
-    if(bTime!==aTime) return bTime-aTime;
+    if(aTime!==bTime) return aTime-bTime;
     // misma fecha base: ida antes que vuelta
     const aType=a[1].tripType==='vuelta'?1:0;
     const bType=b[1].tripType==='vuelta'?1:0;
