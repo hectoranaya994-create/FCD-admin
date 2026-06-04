@@ -1689,7 +1689,7 @@ async function toggleDriverActive(driverKey, action){
   const name=d.name||driverKey;
   const inactivar = action==='inactivar';
   if(inactivar&&!confirm(`¿Inactivar a ${name}? No aparecerá en la asignación de viajes.`))return;
-  await db.ref(`drivers/${driverKey}/inactive`).set(inactivar?true:false);
+  await db.ref(`drivers/${driverKey}/inactive`).set(inactivar);
   showToast(inactivar?`🚫 ${name} inactivado`:`✅ ${name} activado`);
 }
 
