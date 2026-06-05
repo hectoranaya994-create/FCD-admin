@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#0a0f1a">
-<title>First Class Drive — Reservar Servicio</title>
+<title>First Class Drive — Reservar Service</title>
 <style>
 :root{
   --bg:#0a0f1a;--bg2:#111827;--bg3:#1a2235;--bg4:#243048;
@@ -77,11 +77,11 @@ input.error,select.error{border-color:var(--red)!important}
   <div class="header-logo">🚗</div>
   <div>
     <div class="header-brand">First Class Drive</div>
-    <div class="header-sub">Reservación de servicios</div>
+    <div class="header-sub">Booking Services</div>
   </div>
   <div class="header-user" id="header-user" style="display:none">
     <span id="header-username"></span>
-    <button class="btn-logout-small" onclick="clientLogout()">Salir</button>
+    <button class="btn-logout-small" onclick="clientLogout()">Sign Out</button>
   </div>
 </div>
 
@@ -90,103 +90,103 @@ input.error,select.error{border-color:var(--red)!important}
   <!-- ── PANTALLA DE ACCESO ── -->
   <div id="screen-access">
     <div class="card">
-      <div class="card-title">👤 Acceso al portal</div>
+      <div class="card-title">👤 Portal Access</div>
       <div class="form-field">
         <label>Usuario</label>
-        <input id="cl-user" type="text" placeholder="Tu usuario" autocomplete="username" autocapitalize="none">
+        <input id="cl-user" type="text" placeholder="Your username" autocomplete="username" autocapitalize="none">
       </div>
       <div class="form-field">
         <label>Contraseña</label>
         <input id="cl-pass" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')clientLogin()">
       </div>
       <button class="btn-primary" onclick="clientLogin()">
-        <span id="btn-login-text">Ingresar →</span>
+        <span id="btn-login-text">Sign In →</span>
       </button>
-      <div class="login-err" id="login-err">Usuario o contraseña incorrectos</div>
+      <div class="login-err" id="login-err">Incorrect username or password</div>
     </div>
   </div>
 
   <!-- ── FORMULARIO DE RESERVA ── -->
   <div id="screen-booking" style="display:none">
     <div class="welcome-badge" id="welcome-badge" style="display:none">
-      ✅ <span id="welcome-name">Bienvenido</span> — tus datos están prellenados
+      ✅ <span id="welcome-name">Welcome</span> — your info is pre-filled
     </div>
     <div class="steps-bar">
-      <div class="step-item active" id="si-1">1 · Servicio</div>
-      <div class="step-item" id="si-2">2 · Datos</div>
-      <div class="step-item" id="si-3">3 · Confirmar</div>
+      <div class="step-item active" id="si-1">1 · Service</div>
+      <div class="step-item" id="si-2">2 · Info</div>
+      <div class="step-item" id="si-3">3 · Confirm</div>
     </div>
 
     <!-- PASO 1 -->
     <div id="step-1">
       <div class="card">
-        <div class="card-title">🚗 ¿Qué servicio necesitas?</div>
+        <div class="card-title">🚗 What service do you need?</div>
         <div class="service-grid" id="service-grid"></div>
-        <div class="field-error" id="err-service">Por favor selecciona un servicio</div>
+        <div class="field-error" id="err-service">Please select a service</div>
       </div>
-      <button class="btn-primary" onclick="goStep2()">Continuar →</button>
+      <button class="btn-primary" onclick="goStep2()">Continue →</button>
     </div>
 
     <!-- PASO 2 -->
     <div id="step-2" style="display:none">
       <div class="card">
-        <div class="card-title">👤 Tu información</div>
+        <div class="card-title">👤 Your Information</div>
         <div class="form-field">
-          <label>Nombre del contacto / facility *</label>
-          <input id="b-name" type="text" placeholder="Tu nombre o nombre de la organización" autocomplete="name">
-          <div class="field-error" id="err-name">Campo requerido</div>
+          <label>Contact / Facility Name *</label>
+          <input id="b-name" type="text" placeholder="Your name or organization name" autocomplete="name">
+          <div class="field-error" id="err-name">Required field</div>
         </div>
         <div class="form-field">
-          <label>Nombre del paciente *</label>
-          <input id="b-patient" type="text" placeholder="Nombre completo del paciente">
-          <div class="field-error" id="err-patient">Campo requerido</div>
+          <label>Patient Name *</label>
+          <input id="b-patient" type="text" placeholder="Patient full name">
+          <div class="field-error" id="err-patient">Required field</div>
         </div>
         <div class="form-field">
-          <label>Teléfono *</label>
+          <label>Phone *</label>
           <input id="b-phone" type="tel" placeholder="+1 (305) 555-0100" autocomplete="tel">
-          <div class="field-error" id="err-phone">Campo requerido</div>
+          <div class="field-error" id="err-phone">Required field</div>
         </div>
       </div>
       <div class="card">
-        <div class="card-title">📍 Detalles del viaje</div>
+        <div class="card-title">📍 Trip Details</div>
         <div class="form-field">
-          <label>Dirección de recogida *</label>
-          <input id="b-origin" type="text" placeholder="Dirección completa de origen">
-          <div class="field-error" id="err-origin">Campo requerido</div>
+          <label>Pickup Address *</label>
+          <input id="b-origin" type="text" placeholder="Full pickup address">
+          <div class="field-error" id="err-origin">Required field</div>
         </div>
         <div class="form-field">
-          <label>Dirección de destino *</label>
-          <input id="b-dest" type="text" placeholder="Dirección completa de destino">
-          <div class="field-error" id="err-dest">Campo requerido</div>
+          <label>Drop-off Address *</label>
+          <input id="b-dest" type="text" placeholder="Full drop-off address">
+          <div class="field-error" id="err-dest">Required field</div>
         </div>
         <div class="form-field">
-          <label>Fecha y hora del servicio *</label>
+          <label>Service Date & Time *</label>
           <input id="b-datetime" type="datetime-local">
-          <div class="field-error" id="err-datetime">Campo requerido</div>
+          <div class="field-error" id="err-datetime">Required field</div>
         </div>
         <div class="form-field">
-          <label>Observaciones (opcional)</label>
-          <textarea id="b-notes" rows="3" placeholder="Equipo especial, instrucciones para el conductor..."></textarea>
+          <label>Notes (optional)</label>
+          <textarea id="b-notes" rows="3" placeholder="Special equipment, driver instructions..."></textarea>
         </div>
       </div>
-      <button class="btn-primary" onclick="goStep3()">Revisar reserva →</button>
-      <button class="btn-ghost" onclick="goStep1()">← Volver</button>
+      <button class="btn-primary" onclick="goStep3()">Review Booking →</button>
+      <button class="btn-ghost" onclick="goStep1()">← Back</button>
     </div>
 
     <!-- PASO 3 -->
     <div id="step-3" style="display:none">
       <div class="card">
-        <div class="card-title">✅ Resumen de tu reserva</div>
+        <div class="card-title">✅ Booking Summary</div>
         <div id="summary-content"></div>
       </div>
       <div class="notice">
         <span>ℹ️</span>
-        <span>Tu solicitud será revisada y confirmada por nuestro equipo. Recibirás una llamada o mensaje de confirmación antes del servicio.</span>
+        <span>Your request will be reviewed and confirmed by our team. You will receive a call or message before the service.</span>
       </div>
       <button class="btn-primary" id="btn-confirm" onclick="submitBooking()">
-        <span id="btn-confirm-text">Enviar solicitud</span>
+        <span id="btn-confirm-text">Submit Request</span>
       </button>
-      <button class="btn-ghost" onclick="goStep2Edit()">← Editar datos</button>
+      <button class="btn-ghost" onclick="goStep2Edit()">← Edit Info</button>
     </div>
 
     <!-- ÉXITO -->
@@ -194,11 +194,11 @@ input.error,select.error{border-color:var(--red)!important}
       <div class="card">
         <div class="success-wrap">
           <div class="success-icon-big">✅</div>
-          <div class="success-title">¡Solicitud enviada!</div>
-          <div class="success-sub">Tu reserva fue recibida. Nuestro equipo la revisará y te contactará para confirmar el servicio.</div>
+          <div class="success-title">Request Submitted!</div>
+          <div class="success-sub">Your booking was received. Our team will review it and contact you to confirm the service.</div>
           <div class="booking-ref" id="booking-ref">—</div>
-          <div style="font-size:13px;color:var(--text3);margin-bottom:20px">Guarda este número de referencia</div>
-          <button class="btn-ghost" style="max-width:280px;margin:0 auto" onclick="newBooking()">+ Nueva reserva</button>
+          <div style="font-size:13px;color:var(--text3);margin-bottom:20px">Save this reference number</div>
+          <button class="btn-ghost" style="max-width:280px;margin:0 auto" onclick="newBooking()">+ New Booking</button>
         </div>
       </div>
     </div>
@@ -279,7 +279,7 @@ function selectService(s){
 async function clientLogin(){
   const user = document.getElementById('cl-user').value.trim().toLowerCase();
   const pass = document.getElementById('cl-pass').value;
-  if(!user||!pass){ showLoginErr('Completa usuario y contraseña'); return; }
+  if(!user||!pass){ showLoginErr('Please enter username and password'); return; }
 
   const btnText = document.getElementById('btn-login-text');
   btnText.innerHTML = '<div class="spinner"></div>';
@@ -300,8 +300,8 @@ async function clientLogin(){
     }
   } catch(e){ console.error(e); }
 
-  btnText.textContent = 'Ingresar →';
-  showLoginErr('Usuario o contraseña incorrectos');
+  btnText.textContent = 'Sign In →';
+  showLoginErr('Incorrect username or password');
 }
 
 function showLoginErr(msg){
@@ -386,13 +386,13 @@ function goStep3(){
 
   const dtFormatted = new Date(bookingData.datetime).toLocaleString('es',{weekday:'long',year:'numeric',month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'});
   document.getElementById('summary-content').innerHTML = `
-    <div class="summary-row"><span class="summary-label">Servicio</span><span class="summary-value">${bookingData.service}</span></div>
-    <div class="summary-row"><span class="summary-label">Reservado por</span><span class="summary-value">${bookingData.name}</span></div>
-    <div class="summary-row"><span class="summary-label">Paciente</span><span class="summary-value">${bookingData.patientName}</span></div>
-    <div class="summary-row"><span class="summary-label">Teléfono</span><span class="summary-value">${bookingData.phone}</span></div>
-    <div class="summary-row"><span class="summary-label">Recogida</span><span class="summary-value">${bookingData.origin}</span></div>
-    <div class="summary-row"><span class="summary-label">Destino</span><span class="summary-value">${bookingData.destination}</span></div>
-    <div class="summary-row"><span class="summary-label">Fecha y hora</span><span class="summary-value">${dtFormatted}</span></div>
+    <div class="summary-row"><span class="summary-label">Service</span><span class="summary-value">${bookingData.service}</span></div>
+    <div class="summary-row"><span class="summary-label">Booked by</span><span class="summary-value">${bookingData.name}</span></div>
+    <div class="summary-row"><span class="summary-label">Patient</span><span class="summary-value">${bookingData.patientName}</span></div>
+    <div class="summary-row"><span class="summary-label">Phone</span><span class="summary-value">${bookingData.phone}</span></div>
+    <div class="summary-row"><span class="summary-label">Pickup</span><span class="summary-value">${bookingData.origin}</span></div>
+    <div class="summary-row"><span class="summary-label">Drop-off</span><span class="summary-value">${bookingData.destination}</span></div>
+    <div class="summary-row"><span class="summary-label">Date & Time</span><span class="summary-value">${dtFormatted}</span></div>
     ${bookingData.notes?`<div class="summary-row"><span class="summary-label">Observaciones</span><span class="summary-value">${bookingData.notes}</span></div>`:''}
   `;
   showStep(3);
@@ -443,7 +443,7 @@ async function submitBooking(){
     window.scrollTo({top:0,behavior:'smooth'});
   } catch(e){
     console.error(e);
-    btnText.textContent='Enviar solicitud';
+    btnText.textContent='Submit Request';
     btn.disabled=false;
     alert('Error al enviar. Por favor intenta de nuevo.');
   }
