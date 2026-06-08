@@ -197,8 +197,8 @@ input.error,select.error{border-color:var(--red)!important}
             </label>
             <div id="roundtrip-fields" style="display:none;margin-top:12px">
               <div class="form-field" style="margin-bottom:0">
-                <label>Return Date & Time *</label>
-                <input id="b-return-datetime" type="datetime-local">
+                <label>Return Date *</label>
+                <input id="b-return-datetime" type="date">
                 <div class="field-error" id="err-return-datetime">Required field</div>
               </div>
             </div>
@@ -464,7 +464,7 @@ function goStep3(){
     clientKey: currentClient?.key || null,
   };
   const dtFormatted = new Date(bookingData.datetime).toLocaleString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'});
-  const returnFormatted = isRoundTrip ? new Date(bookingData.returnDatetime).toLocaleString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'}) : null;
+  const returnFormatted = isRoundTrip ? new Date(bookingData.returnDatetime+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'}) : null;
   document.getElementById('summary-content').innerHTML = `
     <div class="summary-row"><span class="summary-label">Service</span><span class="summary-value">${bookingData.service}</span></div>
     <div class="summary-row"><span class="summary-label">Booked by</span><span class="summary-value">${bookingData.name}</span></div>
