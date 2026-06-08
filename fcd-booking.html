@@ -327,6 +327,14 @@ function switchPortalTab(tab){
 }
 
 // ── MY BOOKINGS ──
+function canModify(t){
+  if(!t.datetime) return false;
+  if(['cancelled','approved','completed','rejected'].includes(t.status)) return false;
+  const tripTime = new Date(t.datetime).getTime();
+  const hoursLeft = (tripTime - Date.now()) / 3600000;
+  return hoursLeft >= 4;
+}
+
 function loadMyBookings(){
   const wrap = document.getElementById('history-list-wrap');
   if(!currentClient){ wrap.innerHTML='<div style="text-align:center;padding:32px;color:var(--text3)">Sign in to see your bookings.</div>'; return; }
@@ -357,6 +365,9 @@ function loadMyBookings(){
       const s = statusMap[t.status]||{label:t.status,cls:'status-assigned'};
       const dt = t.datetime ? new Date(t.datetime).toLocaleString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '—';
       const created = t.createdAt ? new Date(t.createdAt).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—';
+      const modifiable = canModify(t);
+      const isClosed = ['cancelled','approved','completed','rejected'].includes(t.status);
+      const tJson = JSON.stringify(t).replace(/'/g,'&apos;').replace(/"/g,'&quot;');
       return `<div class="booking-item">
         <div class="booking-item-header">
           <span class="booking-item-id">#${t.id||t._key.slice(-6)}</span>
@@ -369,11 +380,128 @@ function loadMyBookings(){
         <div class="booking-item-detail">🕐 ${dt}</div>
         ${t.driverName?`<div class="booking-item-detail" style="color:#4ade80;margin-top:4px">🚗 Driver: ${t.driverName}</div>`:''}
         <div class="booking-item-date">Submitted: ${created}</div>
+        ${!isClosed ? `<div style="display:flex;gap:8px;margin-top:10px">
+          ${modifiable
+            ? `<button onclick="openEditBooking('${t._key}')" style="flex:1;padding:8px;background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.3);color:#60a5fa;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer">✏️ Edit</button>
+               <button onclick="openCancelBooking('${t._key}','${t.id||t._key.slice(-6)}')" style="flex:1;padding:8px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);color:#f87171;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer">✕ Cancel</button>`
+            : `<div style="font-size:11.5px;color:var(--text3);padding:6px 0;text-align:center;width:100%">⏰ Cannot modify — less than 4 hours before service</div>`
+          }
+        </div>` : ''}
       </div>`;
     }).join('');
   }).catch(e=>{
     wrap.innerHTML='<div style="text-align:center;padding:32px;color:var(--red)">Error loading bookings.</div>';
   });
+}
+
+// ── EDIT BOOKING MODAL ──
+function openEditBooking(tripKey){
+  db.ref(`trips/${tripKey}`).get().then(snap=>{
+    if(!snap.exists()) return;
+    const t = snap.val();
+    if(!canModify(t)){ alert('Cannot modify — less than 4 hours before service.'); return; }
+
+    const existing = document.getElementById('edit-booking-overlay');
+    if(existing) document.body.removeChild(existing);
+    const overlay = document.createElement('div');
+    overlay.id = 'edit-booking-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;overflow-y:auto';
+
+    const dtVal = t.datetime ? new Date(t.datetime).toISOString().slice(0,16) : '';
+    overlay.innerHTML = `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:20px;width:100%;max-width:480px;overflow:hidden">
+      <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+        <span style="font-size:16px;font-weight:700">✏️ Edit Booking #${t.id||tripKey.slice(-6)}</span>
+        <span onclick="document.body.removeChild(document.getElementById('edit-booking-overlay'))" style="cursor:pointer;font-size:20px;color:var(--text3)">×</span>
+      </div>
+      <div style="padding:20px;display:flex;flex-direction:column;gap:14px">
+        <div>
+          <label style="display:block;font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.4px">Pickup Address</label>
+          <input id="edit-origin" type="text" value="${t.origin||''}" style="width:100%;background:var(--bg3);border:1px solid var(--border2);color:var(--text);padding:12px 14px;border-radius:12px;font-size:15px;outline:none">
+        </div>
+        <div>
+          <label style="display:block;font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.4px">Drop-off Address</label>
+          <input id="edit-dest" type="text" value="${t.destination||''}" style="width:100%;background:var(--bg3);border:1px solid var(--border2);color:var(--text);padding:12px 14px;border-radius:12px;font-size:15px;outline:none">
+        </div>
+        <div>
+          <label style="display:block;font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.4px">Service Date & Time</label>
+          <input id="edit-datetime" type="datetime-local" value="${dtVal}" style="width:100%;background:var(--bg3);border:1px solid var(--border2);color:var(--text);padding:12px 14px;border-radius:12px;font-size:15px;outline:none">
+        </div>
+        <div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:10px;padding:10px 14px;font-size:12.5px;color:#fcd34d">
+          ⚠️ Changes must be made at least 4 hours before the service.
+        </div>
+      </div>
+      <div style="padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end">
+        <button onclick="document.body.removeChild(document.getElementById('edit-booking-overlay'))" style="padding:10px 18px;background:transparent;border:1px solid var(--border2);color:var(--text2);border-radius:10px;font-size:14px;font-weight:600;cursor:pointer">Cancel</button>
+        <button onclick="saveEditBooking('${tripKey}')" style="padding:10px 20px;background:linear-gradient(135deg,var(--accent),#1d4ed8);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer">Save Changes</button>
+      </div>
+    </div>`;
+    document.body.appendChild(overlay);
+    overlay.onclick = e => { if(e.target===overlay) document.body.removeChild(overlay); };
+  });
+}
+
+async function saveEditBooking(tripKey){
+  const origin = document.getElementById('edit-origin').value.trim();
+  const dest = document.getElementById('edit-dest').value.trim();
+  const datetime = document.getElementById('edit-datetime').value;
+  if(!origin||!dest||!datetime){ alert('All fields are required.'); return; }
+
+  // Re-check 4h restriction
+  const tripTime = new Date(datetime).getTime();
+  if((tripTime - Date.now()) / 3600000 < 4){ alert('Cannot set a time less than 4 hours from now.'); return; }
+
+  await db.ref(`trips/${tripKey}`).update({ origin, destination:dest, datetime, updatedAt:Date.now(), updatedBy:'client' });
+  document.body.removeChild(document.getElementById('edit-booking-overlay'));
+  loadMyBookings();
+  showPortalToast('✅ Booking updated successfully');
+}
+
+// ── CANCEL BOOKING MODAL ──
+function openCancelBooking(tripKey, tripId){
+  const existing = document.getElementById('cancel-booking-overlay');
+  if(existing) document.body.removeChild(existing);
+  const overlay = document.createElement('div');
+  overlay.id = 'cancel-booking-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
+  overlay.innerHTML = `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:20px;width:100%;max-width:420px;overflow:hidden">
+    <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+      <span style="font-size:16px;font-weight:700">✕ Cancel Booking #${tripId}</span>
+      <span onclick="document.body.removeChild(document.getElementById('cancel-booking-overlay'))" style="cursor:pointer;font-size:20px;color:var(--text3)">×</span>
+    </div>
+    <div style="padding:20px">
+      <div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:10px;padding:12px 14px;font-size:13.5px;color:#fca5a5;margin-bottom:16px">
+        Are you sure you want to cancel this booking? This action cannot be undone.
+      </div>
+      <label style="display:block;font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.4px">Reason (optional)</label>
+      <textarea id="cancel-reason" rows="3" placeholder="Why are you cancelling?" style="width:100%;background:var(--bg3);border:1px solid var(--border2);color:var(--text);padding:12px 14px;border-radius:12px;font-size:14px;outline:none;resize:none"></textarea>
+    </div>
+    <div style="padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end">
+      <button onclick="document.body.removeChild(document.getElementById('cancel-booking-overlay'))" style="padding:10px 18px;background:transparent;border:1px solid var(--border2);color:var(--text2);border-radius:10px;font-size:14px;font-weight:600;cursor:pointer">Keep Booking</button>
+      <button onclick="confirmCancelBooking('${tripKey}')" style="padding:10px 20px;background:#dc2626;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer">Cancel Booking</button>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+  overlay.onclick = e => { if(e.target===overlay) document.body.removeChild(overlay); };
+}
+
+async function confirmCancelBooking(tripKey){
+  const reason = document.getElementById('cancel-reason').value.trim();
+  await db.ref(`trips/${tripKey}`).update({ status:'cancelled', cancelledAt:Date.now(), cancelNote:reason||'Cancelled by client', cancelledBy:'client' });
+  document.body.removeChild(document.getElementById('cancel-booking-overlay'));
+  loadMyBookings();
+  showPortalToast('Booking cancelled.');
+}
+
+// ── PORTAL TOAST ──
+function showPortalToast(msg){
+  const existing = document.getElementById('portal-toast');
+  if(existing) document.body.removeChild(existing);
+  const t = document.createElement('div');
+  t.id = 'portal-toast';
+  t.textContent = msg;
+  t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--bg2);border:1px solid var(--green);border-left:3px solid var(--green);color:var(--text);padding:10px 20px;border-radius:10px;font-size:14px;z-index:9999;white-space:nowrap;box-shadow:0 8px 24px rgba(0,0,0,.4)';
+  document.body.appendChild(t);
+  setTimeout(()=>{ if(document.getElementById('portal-toast')) document.body.removeChild(t); }, 3000);
 }
 
 // ── LOGIN ──
