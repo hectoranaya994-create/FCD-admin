@@ -4,13 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#0a0f1a">
-<title>First Class Drive — Reservar Service</title>
+<title>First Class Drive — Book a Service</title>
 <style>
 :root{
   --bg:#0a0f1a;--bg2:#111827;--bg3:#1a2235;--bg4:#243048;
   --border:#1e2d47;--border2:#2a3f5f;
   --text:#e2e8f4;--text2:#8fa3c0;--text3:#4a6080;
-  --accent:#3b82f6;--green:#22c55e;--red:#ef4444;--yellow:#f59e0b;
+  --accent:#3b82f6;--green:#22c55e;--red:#ef4444;--yellow:#f59e0b;--purple:#a855f7;
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{min-height:100%;background:var(--bg);color:var(--text);font-family:"Segoe UI",system-ui,sans-serif;font-size:15px}
@@ -69,6 +69,25 @@ input.error,select.error{border-color:var(--red)!important}
 .login-err{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:#fca5a5;padding:10px 14px;border-radius:10px;font-size:13px;margin-top:12px;display:none;text-align:center}
 .login-err.show{display:block}
 .welcome-badge{background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.2);border-radius:10px;padding:10px 14px;font-size:13px;color:#4ade80;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+/* ── NAV TABS ── */
+.portal-tabs{display:flex;gap:0;margin-bottom:20px;border-radius:12px;overflow:hidden;border:1px solid var(--border)}
+.portal-tab{flex:1;padding:11px 8px;text-align:center;font-size:13px;font-weight:700;color:var(--text3);background:var(--bg2);border-right:1px solid var(--border);cursor:pointer;transition:all .2s}
+.portal-tab:last-child{border-right:none}
+.portal-tab.active{background:rgba(59,130,246,.15);color:var(--accent)}
+.portal-tab:hover:not(.active){background:var(--bg3);color:var(--text2)}
+/* ── BOOKING HISTORY ── */
+.booking-item{background:var(--bg3);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:10px}
+.booking-item-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.booking-item-id{font-size:14px;font-weight:700;color:var(--accent)}
+.booking-status{font-size:11.5px;font-weight:700;padding:3px 10px;border-radius:20px}
+.status-pending{background:rgba(245,158,11,.15);color:#fbbf24}
+.status-assigned{background:rgba(148,163,184,.1);color:var(--text3)}
+.status-completed{background:rgba(168,85,247,.15);color:#c084fc}
+.status-approved{background:rgba(34,197,94,.15);color:#4ade80}
+.status-cancelled{background:rgba(239,68,68,.15);color:#f87171}
+.booking-item-service{font-size:13px;font-weight:600;margin-bottom:4px}
+.booking-item-detail{font-size:12px;color:var(--text2);margin-bottom:2px}
+.booking-item-date{font-size:11.5px;color:var(--text3);margin-top:6px}
 @media(max-width:400px){.service-grid{grid-template-columns:1fr}.card{padding:16px}}
 </style>
 </head>
@@ -106,115 +125,132 @@ input.error,select.error{border-color:var(--red)!important}
     </div>
   </div>
 
-  <!-- ── FORMULARIO DE RESERVA ── -->
+  <!-- ── PORTAL PRINCIPAL ── -->
   <div id="screen-booking" style="display:none">
     <div class="welcome-badge" id="welcome-badge" style="display:none">
       ✅ <span id="welcome-name">Welcome</span> — your info is pre-filled
     </div>
-    <div class="steps-bar">
-      <div class="step-item active" id="si-1">1 · Service</div>
-      <div class="step-item" id="si-2">2 · Info</div>
-      <div class="step-item" id="si-3">3 · Confirm</div>
+
+    <!-- TABS -->
+    <div class="portal-tabs">
+      <div class="portal-tab active" id="tab-new" onclick="switchPortalTab('new')">🚗 New Booking</div>
+      <div class="portal-tab" id="tab-history" onclick="switchPortalTab('history')">📋 My Bookings</div>
     </div>
 
-    <!-- PASO 1 -->
-    <div id="step-1">
-      <div class="card">
-        <div class="card-title">🚗 What service do you need?</div>
-        <div class="service-grid" id="service-grid"></div>
-        <div class="field-error" id="err-service">Please select a service</div>
+    <!-- ── NEW BOOKING ── -->
+    <div id="panel-new">
+      <div class="steps-bar">
+        <div class="step-item active" id="si-1">1 · Service</div>
+        <div class="step-item" id="si-2">2 · Info</div>
+        <div class="step-item" id="si-3">3 · Confirm</div>
       </div>
-      <button class="btn-primary" onclick="goStep2()">Continue →</button>
-    </div>
 
-    <!-- PASO 2 -->
-    <div id="step-2" style="display:none">
-      <div class="card">
-        <div class="card-title">👤 Your Information</div>
-        <div class="form-field">
-          <label>Contact / Facility Name *</label>
-          <input id="b-name" type="text" placeholder="Your name or organization name" autocomplete="name">
-          <div class="field-error" id="err-name">Required field</div>
+      <div id="step-1">
+        <div class="card">
+          <div class="card-title">🚗 What service do you need?</div>
+          <div class="service-grid" id="service-grid"></div>
+          <div class="field-error" id="err-service">Please select a service</div>
         </div>
-        <div class="form-field">
-          <label>Patient Name *</label>
-          <input id="b-patient" type="text" placeholder="Patient full name">
-          <div class="field-error" id="err-patient">Required field</div>
-        </div>
-        <div class="form-field">
-          <label>Phone *</label>
-          <input id="b-phone" type="tel" placeholder="+1 (305) 555-0100" autocomplete="tel">
-          <div class="field-error" id="err-phone">Required field</div>
-        </div>
+        <button class="btn-primary" onclick="goStep2()">Continue →</button>
       </div>
-      <div class="card">
-        <div class="card-title">📍 Trip Details</div>
-        <div class="form-field">
-          <label>Pickup Address *</label>
-          <input id="b-origin" type="text" placeholder="Full pickup address">
-          <div class="field-error" id="err-origin">Required field</div>
-        </div>
-        <div class="form-field">
-          <label>Drop-off Address *</label>
-          <input id="b-dest" type="text" placeholder="Full drop-off address">
-          <div class="field-error" id="err-dest">Required field</div>
-        </div>
-        <div class="form-field">
-          <label>Service Date & Time *</label>
-          <input id="b-datetime" type="datetime-local">
-          <div class="field-error" id="err-datetime">Required field</div>
-        </div>
-        <div style="background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.2);border-radius:12px;padding:14px;margin-bottom:14px">
-          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:14px;font-weight:600;color:var(--text2);margin-bottom:0">
-            <input type="checkbox" id="b-roundtrip" style="width:18px;height:18px;accent-color:var(--accent)" onchange="toggleRoundTrip()">
-            🔄 Include Return Trip
-          </label>
-          <div id="roundtrip-fields" style="display:none;margin-top:12px">
-            <div class="form-field" style="margin-bottom:0">
-              <label>Return Date & Time *</label>
-              <input id="b-return-datetime" type="datetime-local">
-              <div class="field-error" id="err-return-datetime">Required field</div>
-            </div>
+
+      <div id="step-2" style="display:none">
+        <div class="card">
+          <div class="card-title">👤 Your Information</div>
+          <div class="form-field">
+            <label>Contact / Facility Name *</label>
+            <input id="b-name" type="text" placeholder="Your name or organization name" autocomplete="name">
+            <div class="field-error" id="err-name">Required field</div>
+          </div>
+          <div class="form-field">
+            <label>Patient Name *</label>
+            <input id="b-patient" type="text" placeholder="Patient full name">
+            <div class="field-error" id="err-patient">Required field</div>
+          </div>
+          <div class="form-field">
+            <label>Phone *</label>
+            <input id="b-phone" type="tel" placeholder="+1 (305) 555-0100" autocomplete="tel">
+            <div class="field-error" id="err-phone">Required field</div>
           </div>
         </div>
-        <div class="form-field">
-          <label>Notes (optional)</label>
-          <textarea id="b-notes" rows="3" placeholder="Special equipment, driver instructions..."></textarea>
+        <div class="card">
+          <div class="card-title">📍 Trip Details</div>
+          <div class="form-field">
+            <label>Pickup Address *</label>
+            <input id="b-origin" type="text" placeholder="Full pickup address">
+            <div class="field-error" id="err-origin">Required field</div>
+          </div>
+          <div class="form-field">
+            <label>Drop-off Address *</label>
+            <input id="b-dest" type="text" placeholder="Full drop-off address">
+            <div class="field-error" id="err-dest">Required field</div>
+          </div>
+          <div class="form-field">
+            <label>Service Date & Time *</label>
+            <input id="b-datetime" type="datetime-local">
+            <div class="field-error" id="err-datetime">Required field</div>
+          </div>
+          <div style="background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.2);border-radius:12px;padding:14px;margin-bottom:14px">
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:14px;font-weight:600;color:var(--text2);margin-bottom:0">
+              <input type="checkbox" id="b-roundtrip" style="width:18px;height:18px;accent-color:var(--accent)" onchange="toggleRoundTrip()">
+              🔄 Include Return Trip
+            </label>
+            <div id="roundtrip-fields" style="display:none;margin-top:12px">
+              <div class="form-field" style="margin-bottom:0">
+                <label>Return Date & Time *</label>
+                <input id="b-return-datetime" type="datetime-local">
+                <div class="field-error" id="err-return-datetime">Required field</div>
+              </div>
+            </div>
+          </div>
+          <div class="form-field">
+            <label>Notes (optional)</label>
+            <textarea id="b-notes" rows="3" placeholder="Special equipment, driver instructions..."></textarea>
+          </div>
+        </div>
+        <button class="btn-primary" onclick="goStep3()">Review Booking →</button>
+        <button class="btn-ghost" onclick="goStep1()">← Back</button>
+      </div>
+
+      <div id="step-3" style="display:none">
+        <div class="card">
+          <div class="card-title">✅ Booking Summary</div>
+          <div id="summary-content"></div>
+        </div>
+        <div class="notice">
+          <span>ℹ️</span>
+          <span>Your request will be reviewed and confirmed by our team. You will receive a call or message before the service.</span>
+        </div>
+        <button class="btn-primary" id="btn-confirm" onclick="submitBooking()">
+          <span id="btn-confirm-text">Submit Request</span>
+        </button>
+        <button class="btn-ghost" onclick="goStep2Edit()">← Edit Info</button>
+      </div>
+
+      <div id="step-success" style="display:none">
+        <div class="card">
+          <div class="success-wrap">
+            <div class="success-icon-big">✅</div>
+            <div class="success-title">Request Submitted!</div>
+            <div class="success-sub">Your booking was received. Our team will review it and contact you to confirm the service.</div>
+            <div class="booking-ref" id="booking-ref">—</div>
+            <div style="font-size:13px;color:var(--text3);margin-bottom:20px">Save this reference number</div>
+            <button class="btn-ghost" style="max-width:280px;margin:0 auto" onclick="newBooking()">+ New Booking</button>
+          </div>
         </div>
       </div>
-      <button class="btn-primary" onclick="goStep3()">Review Booking →</button>
-      <button class="btn-ghost" onclick="goStep1()">← Back</button>
     </div>
 
-    <!-- PASO 3 -->
-    <div id="step-3" style="display:none">
-      <div class="card">
-        <div class="card-title">✅ Booking Summary</div>
-        <div id="summary-content"></div>
-      </div>
-      <div class="notice">
-        <span>ℹ️</span>
-        <span>Your request will be reviewed and confirmed by our team. You will receive a call or message before the service.</span>
-      </div>
-      <button class="btn-primary" id="btn-confirm" onclick="submitBooking()">
-        <span id="btn-confirm-text">Submit Request</span>
-      </button>
-      <button class="btn-ghost" onclick="goStep2Edit()">← Edit Info</button>
-    </div>
-
-    <!-- ÉXITO -->
-    <div id="step-success" style="display:none">
-      <div class="card">
-        <div class="success-wrap">
-          <div class="success-icon-big">✅</div>
-          <div class="success-title">Request Submitted!</div>
-          <div class="success-sub">Your booking was received. Our team will review it and contact you to confirm the service.</div>
-          <div class="booking-ref" id="booking-ref">—</div>
-          <div style="font-size:13px;color:var(--text3);margin-bottom:20px">Save this reference number</div>
-          <button class="btn-ghost" style="max-width:280px;margin:0 auto" onclick="newBooking()">+ New Booking</button>
+    <!-- ── MY BOOKINGS ── -->
+    <div id="panel-history" style="display:none">
+      <div id="history-list-wrap">
+        <div style="text-align:center;padding:32px;color:var(--text3)">
+          <div style="font-size:32px;margin-bottom:8px">📋</div>
+          Loading your bookings...
         </div>
       </div>
     </div>
+
   </div>
 
 </div>
@@ -252,13 +288,10 @@ async function sha256(msg){
   return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
 }
 
-// Cargar servicios desde Firebase
 db.ref('catalog').on('value', snap => {
   const catalog = snap.val();
   if(catalog && Object.keys(catalog).length > 0){
-    SERVICES = Object.values(catalog)
-      .filter(s=>s.active!==false)
-      .sort((a,b)=>(a.price||0)-(b.price||0));
+    SERVICES = Object.values(catalog).filter(s=>s.active!==false).sort((a,b)=>(a.price||0)-(b.price||0));
   }
   renderServices();
 });
@@ -266,11 +299,7 @@ db.ref('catalog').on('value', snap => {
 function renderServices(){
   const grid = document.getElementById('service-grid');
   if(!grid)return;
-  if(SERVICES.length===0){
-    grid.innerHTML='<div style="text-align:center;padding:32px;color:#6b7280;grid-column:1/-1;font-size:14px">⏳ Cargando servicios...</div>';
-    return;
-  }
-  // Precio oculto — solo icono y nombre
+  if(SERVICES.length===0){ grid.innerHTML='<div style="text-align:center;padding:32px;color:#6b7280;grid-column:1/-1;font-size:14px">⏳ Loading services...</div>'; return; }
   grid.innerHTML = SERVICES.map(s=>`
     <div class="service-card" id="sc-${s.id||s.name}" onclick="selectService(${JSON.stringify(s).replace(/"/g,'\'')})">
       <div class="sc-icon">${s.icon||'🚗'}</div>
@@ -288,15 +317,72 @@ function selectService(s){
   document.getElementById('err-service').classList.remove('show');
 }
 
-// ── LOGIN DE CLIENTE ──
+// ── PORTAL TABS ──
+function switchPortalTab(tab){
+  document.getElementById('tab-new').classList.toggle('active', tab==='new');
+  document.getElementById('tab-history').classList.toggle('active', tab==='history');
+  document.getElementById('panel-new').style.display = tab==='new' ? 'block' : 'none';
+  document.getElementById('panel-history').style.display = tab==='history' ? 'block' : 'none';
+  if(tab==='history') loadMyBookings();
+}
+
+// ── MY BOOKINGS ──
+function loadMyBookings(){
+  const wrap = document.getElementById('history-list-wrap');
+  if(!currentClient){ wrap.innerHTML='<div style="text-align:center;padding:32px;color:var(--text3)">Sign in to see your bookings.</div>'; return; }
+  wrap.innerHTML='<div style="text-align:center;padding:24px;color:var(--text3)"><div class="spinner" style="margin:0 auto;border-top-color:var(--accent)"></div></div>';
+
+  db.ref('trips').orderByChild('clientKey').equalTo(currentClient.key).get().then(snap=>{
+    if(!snap.exists()){
+      wrap.innerHTML='<div style="text-align:center;padding:40px;color:var(--text3)"><div style="font-size:40px;margin-bottom:12px">📋</div>No bookings found yet.</div>';
+      return;
+    }
+    const trips=[];
+    snap.forEach(c=>{ const t=c.val(); t._key=c.key; trips.push(t); });
+    trips.sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+
+    const statusMap={
+      pending:{label:'Pending',cls:'status-pending'},
+      assigned:{label:'Assigned',cls:'status-assigned'},
+      onway:{label:'On the way',cls:'status-assigned'},
+      arrived:{label:'Arrived',cls:'status-assigned'},
+      started:{label:'In progress',cls:'status-assigned'},
+      completed:{label:'Completed',cls:'status-completed'},
+      approved:{label:'Approved',cls:'status-approved'},
+      cancelled:{label:'Cancelled',cls:'status-cancelled'},
+      rejected:{label:'Rejected',cls:'status-cancelled'},
+    };
+
+    wrap.innerHTML = trips.map(t=>{
+      const s = statusMap[t.status]||{label:t.status,cls:'status-assigned'};
+      const dt = t.datetime ? new Date(t.datetime).toLocaleString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '—';
+      const created = t.createdAt ? new Date(t.createdAt).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—';
+      return `<div class="booking-item">
+        <div class="booking-item-header">
+          <span class="booking-item-id">#${t.id||t._key.slice(-6)}</span>
+          <span class="booking-status ${s.cls}">${s.label}</span>
+        </div>
+        <div class="booking-item-service">${t.service||'—'}</div>
+        ${t.patientName||t.clientName?`<div class="booking-item-detail">👤 Patient: ${t.patientName||t.clientName}</div>`:''}
+        <div class="booking-item-detail">🟢 ${t.origin||'—'}</div>
+        <div class="booking-item-detail">🔴 ${t.destination||'—'}</div>
+        <div class="booking-item-detail">🕐 ${dt}</div>
+        ${t.driverName?`<div class="booking-item-detail" style="color:#4ade80;margin-top:4px">🚗 Driver: ${t.driverName}</div>`:''}
+        <div class="booking-item-date">Submitted: ${created}</div>
+      </div>`;
+    }).join('');
+  }).catch(e=>{
+    wrap.innerHTML='<div style="text-align:center;padding:32px;color:var(--red)">Error loading bookings.</div>';
+  });
+}
+
+// ── LOGIN ──
 async function clientLogin(){
   const user = document.getElementById('cl-user').value.trim().toLowerCase();
   const pass = document.getElementById('cl-pass').value;
   if(!user||!pass){ showLoginErr('Please enter username and password'); return; }
-
   const btnText = document.getElementById('btn-login-text');
   btnText.innerHTML = '<div class="spinner"></div>';
-
   try {
     const hash = await sha256(pass);
     const snap = await db.ref(`bookingClients/${user}`).get();
@@ -304,41 +390,32 @@ async function clientLogin(){
       const c = snap.val();
       let valid = false;
       if(c.passwordHash && c.passwordHash === hash) valid = true;
-      else if(c.password && c.password === pass){ valid = true; await db.ref(`bookingClients/${user}/passwordHash`).set(hash); await db.ref(`bookingClients/${user}/password`).remove(); }
-      if(valid){
-        currentClient = { key: user, ...c };
-        enterBookingPortal(true);
-        return;
-      }
+      else if(c.password && c.password === pass){ valid=true; await db.ref(`bookingClients/${user}/passwordHash`).set(hash); await db.ref(`bookingClients/${user}/password`).remove(); }
+      if(valid){ currentClient = { key: user, ...c }; enterBookingPortal(true); return; }
     }
   } catch(e){ console.error(e); }
-
   btnText.textContent = 'Sign In →';
   showLoginErr('Incorrect username or password');
 }
 
 function showLoginErr(msg){
   const err = document.getElementById('login-err');
-  err.textContent = msg;
-  err.classList.add('show');
+  err.textContent = msg; err.classList.add('show');
   setTimeout(()=>err.classList.remove('show'), 3000);
 }
 
 function enterBookingPortal(isLoggedIn){
   document.getElementById('screen-access').style.display = 'none';
   document.getElementById('screen-booking').style.display = 'block';
-
   if(isLoggedIn && currentClient){
     document.getElementById('b-name').value = currentClient.name || '';
     document.getElementById('b-phone').value = currentClient.phone || '';
     if(currentClient.address) document.getElementById('b-origin').value = currentClient.address;
-
     document.getElementById('welcome-badge').style.display = 'flex';
     document.getElementById('welcome-name').textContent = currentClient.name || currentClient.key;
     document.getElementById('header-user').style.display = 'flex';
     document.getElementById('header-username').textContent = currentClient.name || currentClient.key;
   }
-
   renderServices();
   const now = new Date(Date.now() + 3600000);
   document.getElementById('b-datetime').min = now.toISOString().slice(0,16);
@@ -353,9 +430,9 @@ function clientLogout(){
   document.getElementById('cl-user').value = '';
   document.getElementById('cl-pass').value = '';
   document.getElementById('welcome-badge').style.display = 'none';
-  showStep(1);
-  selectedService = null;
+  showStep(1); selectedService = null;
   document.querySelectorAll('.service-card').forEach(c=>c.classList.remove('selected'));
+  switchPortalTab('new');
 }
 
 function toggleRoundTrip(){
@@ -365,35 +442,17 @@ function toggleRoundTrip(){
 
 // ── PASOS ──
 function goStep1(){ showStep(1); }
-
-function goStep2(){
-  if(!selectedService){ document.getElementById('err-service').classList.add('show'); return; }
-  showStep(2);
-}
+function goStep2(){ if(!selectedService){ document.getElementById('err-service').classList.add('show'); return; } showStep(2); }
 
 function goStep3(){
   const isRoundTrip = document.getElementById('b-roundtrip').checked;
-  const fields = [
-    {id:'b-name',err:'err-name'},
-    {id:'b-patient',err:'err-patient'},
-    {id:'b-phone',err:'err-phone'},
-    {id:'b-origin',err:'err-origin'},
-    {id:'b-dest',err:'err-dest'},
-    {id:'b-datetime',err:'err-datetime'},
-  ];
+  const fields = [{id:'b-name',err:'err-name'},{id:'b-patient',err:'err-patient'},{id:'b-phone',err:'err-phone'},{id:'b-origin',err:'err-origin'},{id:'b-dest',err:'err-dest'},{id:'b-datetime',err:'err-datetime'}];
   if(isRoundTrip) fields.push({id:'b-return-datetime',err:'err-return-datetime'});
   let valid = true;
-  fields.forEach(f=>{
-    const el = document.getElementById(f.id);
-    const errEl = document.getElementById(f.err);
-    if(!el.value.trim()){ el.classList.add('error'); errEl.classList.add('show'); valid=false; }
-    else{ el.classList.remove('error'); errEl.classList.remove('show'); }
-  });
+  fields.forEach(f=>{ const el=document.getElementById(f.id); const errEl=document.getElementById(f.err); if(!el.value.trim()){ el.classList.add('error'); errEl.classList.add('show'); valid=false; } else{ el.classList.remove('error'); errEl.classList.remove('show'); } });
   if(!valid) return;
-
   bookingData = {
-    service: selectedService.name, serviceId: selectedService.id||'',
-    price: selectedService.price||0,
+    service: selectedService.name, serviceId: selectedService.id||'', price: selectedService.price||0,
     name: document.getElementById('b-name').value.trim(),
     patientName: document.getElementById('b-patient').value.trim(),
     phone: document.getElementById('b-phone').value.trim(),
@@ -401,11 +460,9 @@ function goStep3(){
     destination: document.getElementById('b-dest').value.trim(),
     datetime: document.getElementById('b-datetime').value,
     returnDatetime: isRoundTrip ? document.getElementById('b-return-datetime').value : null,
-    isRoundTrip: isRoundTrip,
-    notes: document.getElementById('b-notes').value.trim(),
+    isRoundTrip, notes: document.getElementById('b-notes').value.trim(),
     clientKey: currentClient?.key || null,
   };
-
   const dtFormatted = new Date(bookingData.datetime).toLocaleString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'});
   const returnFormatted = isRoundTrip ? new Date(bookingData.returnDatetime).toLocaleString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'}) : null;
   document.getElementById('summary-content').innerHTML = `
@@ -425,79 +482,45 @@ function goStep3(){
 function goStep2Edit(){ showStep(2); }
 
 function showStep(n){
-  [1,2,3].forEach(i=>{
-    document.getElementById('step-'+i).style.display = i===n?'block':'none';
-    const si = document.getElementById('si-'+i);
-    si.classList.toggle('active',i===n);
-    si.classList.toggle('done',i<n);
-  });
+  [1,2,3].forEach(i=>{ document.getElementById('step-'+i).style.display=i===n?'block':'none'; const si=document.getElementById('si-'+i); si.classList.toggle('active',i===n); si.classList.toggle('done',i<n); });
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
 async function submitBooking(){
   const btn = document.getElementById('btn-confirm');
   const btnText = document.getElementById('btn-confirm-text');
-  btn.disabled = true;
-  btnText.innerHTML = '<div class="spinner"></div> Sending...';
+  btn.disabled = true; btnText.innerHTML = '<div class="spinner"></div> Sending...';
   try {
     const snap = await db.ref('trips').get();
     let maxId = 266;
-    snap.forEach(c=>{const v=c.val();if(v&&v.id){const n=parseInt(v.id);if(!isNaN(n)&&n>maxId)maxId=n;}});
+    snap.forEach(c=>{ const v=c.val(); if(v&&v.id){ const n=parseInt(v.id); if(!isNaN(n)&&n>maxId)maxId=n; } });
     const newId = (maxId+1).toString().padStart(4,'0');
-    const idaRef = db.ref('trips').push();
-    await idaRef.set({
-      id: newId,
-      clientName: bookingData.patientName,
-      patientName: bookingData.patientName,
-      bookedBy: bookingData.name,
-      clientPhone: bookingData.phone,
-      service: bookingData.service,
-      serviceId: bookingData.serviceId,
-      origin: bookingData.origin,
-      destination: bookingData.destination,
-      datetime: bookingData.datetime,
-      adminNote: bookingData.notes||'',
-      price: bookingData.price,
-      status: 'pending',
-      source: 'booking_portal',
-      clientKey: bookingData.clientKey||null,
-      isRoundTrip: bookingData.isRoundTrip||false,
-      tripType: 'ida',
-      createdAt: Date.now(),
+    await db.ref('trips').push({
+      id:newId, clientName:bookingData.patientName, patientName:bookingData.patientName,
+      bookedBy:bookingData.name, clientPhone:bookingData.phone, service:bookingData.service,
+      serviceId:bookingData.serviceId, origin:bookingData.origin, destination:bookingData.destination,
+      datetime:bookingData.datetime, adminNote:bookingData.notes||'', price:bookingData.price,
+      status:'pending', source:'booking_portal', clientKey:bookingData.clientKey||null,
+      isRoundTrip:bookingData.isRoundTrip||false, tripType:'ida', createdAt:Date.now(),
     });
     if(bookingData.isRoundTrip && bookingData.returnDatetime){
       const returnId = (maxId+2).toString().padStart(4,'0');
       await db.ref('trips').push({
-        id: returnId,
-        clientName: bookingData.patientName,
-        patientName: bookingData.patientName,
-        bookedBy: bookingData.name,
-        clientPhone: bookingData.phone,
-        service: bookingData.service,
-        serviceId: bookingData.serviceId,
-        origin: bookingData.destination,
-        destination: bookingData.origin,
-        datetime: bookingData.returnDatetime,
-        adminNote: bookingData.notes||'',
-        price: bookingData.price,
-        status: 'pending',
-        source: 'booking_portal',
-        clientKey: bookingData.clientKey||null,
-        isRoundTrip: true,
-        tripType: 'vuelta',
-        linkedTripId: newId,
-        createdAt: Date.now(),
+        id:returnId, clientName:bookingData.patientName, patientName:bookingData.patientName,
+        bookedBy:bookingData.name, clientPhone:bookingData.phone, service:bookingData.service,
+        serviceId:bookingData.serviceId, origin:bookingData.destination, destination:bookingData.origin,
+        datetime:bookingData.returnDatetime, adminNote:bookingData.notes||'', price:bookingData.price,
+        status:'pending', source:'booking_portal', clientKey:bookingData.clientKey||null,
+        isRoundTrip:true, tripType:'vuelta', linkedTripId:newId, createdAt:Date.now(),
       });
     }
     document.getElementById('step-3').style.display='none';
     document.getElementById('step-success').style.display='block';
     document.getElementById('booking-ref').textContent='#'+newId;
-    [1,2,3].forEach(i=>{document.getElementById('si-'+i).classList.remove('active');document.getElementById('si-'+i).classList.add('done');});
+    [1,2,3].forEach(i=>{ document.getElementById('si-'+i).classList.remove('active'); document.getElementById('si-'+i).classList.add('done'); });
     window.scrollTo({top:0,behavior:'smooth'});
   } catch(e){
-    console.error(e);
-    btnText.textContent='Submit Request';
-    btn.disabled=false;
+    console.error(e); btnText.textContent='Submit Request'; btn.disabled=false;
     alert('Error submitting. Please try again.');
   }
 }
@@ -506,7 +529,7 @@ function newBooking(){
   selectedService=null; bookingData={};
   document.getElementById('step-success').style.display='none';
   ['b-name','b-patient','b-phone','b-origin','b-dest','b-notes','b-return-datetime'].forEach(id=>{ const el=document.getElementById(id); if(el)el.value=''; });
-  const rt = document.getElementById('b-roundtrip'); if(rt) rt.checked=false;
+  const rt=document.getElementById('b-roundtrip'); if(rt)rt.checked=false;
   document.getElementById('roundtrip-fields').style.display='none';
   if(currentClient){
     document.getElementById('b-name').value=currentClient.name||'';
