@@ -328,11 +328,8 @@ function switchPortalTab(tab){
 
 // ── MY BOOKINGS ──
 function canModify(t){
-  if(!t.datetime) return false;
   if(['cancelled','approved','completed','rejected'].includes(t.status)) return false;
-  const tripTime = new Date(t.datetime).getTime();
-  const hoursLeft = (tripTime - Date.now()) / 3600000;
-  return hoursLeft >= 4;
+  return true;
 }
 
 function loadMyBookings(){
@@ -348,6 +345,12 @@ function loadMyBookings(){
     const trips=[];
     snap.forEach(c=>{ const t=c.val(); t._key=c.key; trips.push(t); });
     trips.sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+    const filtered = trips.filter(t=>!['completed','approved'].includes(t.status));
+
+    if(filtered.length===0){
+      wrap.innerHTML='<div style="text-align:center;padding:40px;color:var(--text3)"><div style="font-size:40px;margin-bottom:12px">📋</div>No active bookings found.</div>';
+      return;
+    }
 
     const statusMap={
       pending:{label:'Pending',cls:'status-pending'},
@@ -355,19 +358,16 @@ function loadMyBookings(){
       onway:{label:'On the way',cls:'status-assigned'},
       arrived:{label:'Arrived',cls:'status-assigned'},
       started:{label:'In progress',cls:'status-assigned'},
-      completed:{label:'Completed',cls:'status-completed'},
-      approved:{label:'Approved',cls:'status-approved'},
       cancelled:{label:'Cancelled',cls:'status-cancelled'},
       rejected:{label:'Rejected',cls:'status-cancelled'},
     };
 
-    wrap.innerHTML = trips.map(t=>{
+    wrap.innerHTML = filtered.map(t=>{
       const s = statusMap[t.status]||{label:t.status,cls:'status-assigned'};
       const dt = t.datetime ? new Date(t.datetime).toLocaleString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '—';
       const created = t.createdAt ? new Date(t.createdAt).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—';
       const modifiable = canModify(t);
-      const isClosed = ['cancelled','approved','completed','rejected'].includes(t.status);
-      const tJson = JSON.stringify(t).replace(/'/g,'&apos;').replace(/"/g,'&quot;');
+      const isClosed = ['cancelled','rejected'].includes(t.status);
       return `<div class="booking-item">
         <div class="booking-item-header">
           <span class="booking-item-id">#${t.id||t._key.slice(-6)}</span>
@@ -384,7 +384,7 @@ function loadMyBookings(){
           ${modifiable
             ? `<button onclick="openEditBooking('${t._key}')" style="flex:1;padding:8px;background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.3);color:#60a5fa;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer">✏️ Edit</button>
                <button onclick="openCancelBooking('${t._key}','${t.id||t._key.slice(-6)}')" style="flex:1;padding:8px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);color:#f87171;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer">✕ Cancel</button>`
-            : `<div style="font-size:11.5px;color:var(--text3);padding:6px 0;text-align:center;width:100%">⏰ Cannot modify — less than 4 hours before service</div>`
+            : ''
           }
         </div>` : ''}
       </div>`;
@@ -399,7 +399,7 @@ function openEditBooking(tripKey){
   db.ref(`trips/${tripKey}`).get().then(snap=>{
     if(!snap.exists()) return;
     const t = snap.val();
-    if(!canModify(t)){ alert('Cannot modify — less than 4 hours before service.'); return; }
+    if(!canModify(t)){ alert('This booking can no longer be modified.'); return; }
 
     const existing = document.getElementById('edit-booking-overlay');
     if(existing) document.body.removeChild(existing);
@@ -426,9 +426,6 @@ function openEditBooking(tripKey){
           <label style="display:block;font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.4px">Service Date & Time</label>
           <input id="edit-datetime" type="datetime-local" value="${dtVal}" style="width:100%;background:var(--bg3);border:1px solid var(--border2);color:var(--text);padding:12px 14px;border-radius:12px;font-size:15px;outline:none">
         </div>
-        <div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:10px;padding:10px 14px;font-size:12.5px;color:#fcd34d">
-          ⚠️ Changes must be made at least 4 hours before the service.
-        </div>
       </div>
       <div style="padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end">
         <button onclick="document.body.removeChild(document.getElementById('edit-booking-overlay'))" style="padding:10px 18px;background:transparent;border:1px solid var(--border2);color:var(--text2);border-radius:10px;font-size:14px;font-weight:600;cursor:pointer">Cancel</button>
@@ -445,11 +442,6 @@ async function saveEditBooking(tripKey){
   const dest = document.getElementById('edit-dest').value.trim();
   const datetime = document.getElementById('edit-datetime').value;
   if(!origin||!dest||!datetime){ alert('All fields are required.'); return; }
-
-  // Re-check 4h restriction
-  const tripTime = new Date(datetime).getTime();
-  if((tripTime - Date.now()) / 3600000 < 4){ alert('Cannot set a time less than 4 hours from now.'); return; }
-
   await db.ref(`trips/${tripKey}`).update({ origin, destination:dest, datetime, updatedAt:Date.now(), updatedBy:'client' });
   document.body.removeChild(document.getElementById('edit-booking-overlay'));
   loadMyBookings();
