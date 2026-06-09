@@ -1561,7 +1561,26 @@ async function editTripDate(tripKey, currentDatetime){
   overlay.onclick=(e)=>{if(e.target===overlay)document.body.removeChild(overlay);};
 }
 function openNewTrip(){openModal('new-trip-modal');}
-function openUpdateTrip(k){showToast('Función de actualización disponible próximamente');}
+function openUpdateTrip(k){
+  const t=STATE.allTrips[k];if(!t)return;
+  const current=t.datetime?new Date(t.datetime).toISOString().slice(0,16):'';
+  const existing=document.getElementById('edit-date-overlay');if(existing)document.body.removeChild(existing);
+  const overlay=document.createElement('div');
+  overlay.id='edit-date-overlay';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+  overlay.innerHTML=`<div style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;width:100%;max-width:400px;overflow:hidden"><div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between"><span style="font-size:15px;font-weight:700">✏️ Editar viaje #${t.id||k.slice(-4)}</span><span onclick="document.body.removeChild(document.getElementById('edit-date-overlay'))" style="cursor:pointer;font-size:18px;color:var(--text3)">×</span></div><div style="padding:20px;display:flex;flex-direction:column;gap:14px"><div><label style="display:block;font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px">Fecha y hora</label><input id="upd-datetime" type="datetime-local" value="${current}" style="width:100%;background:var(--bg3);border:1px solid var(--border2);color:var(--text);padding:10px 12px;border-radius:8px;font-size:14px;outline:none"></div><div><label style="display:block;font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px">🟢 Origen</label><input id="upd-origin" type="text" value="${t.origin||''}" style="width:100%;background:var(--bg3);border:1px solid var(--border2);color:var(--text);padding:10px 12px;border-radius:8px;font-size:14px;outline:none"></div><div><label style="display:block;font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px">🔴 Destino</label><input id="upd-dest" type="text" value="${t.destination||''}" style="width:100%;background:var(--bg3);border:1px solid var(--border2);color:var(--text);padding:10px 12px;border-radius:8px;font-size:14px;outline:none"></div></div><div style="padding:12px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end"><button onclick="document.body.removeChild(document.getElementById('edit-date-overlay'))" style="padding:8px 16px;background:transparent;border:1px solid var(--border2);color:var(--text2);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">Cancelar</button><button id="upd-save-btn" style="padding:8px 16px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">✅ Guardar</button></div></div>`;
+  document.body.appendChild(overlay);
+  document.getElementById('upd-save-btn').onclick=async()=>{
+    const datetime=document.getElementById('upd-datetime').value;
+    const origin=document.getElementById('upd-origin').value.trim();
+    const dest=document.getElementById('upd-dest').value.trim();
+    if(!datetime||!origin||!dest){showToast('Completa todos los campos','error');return;}
+    await db.ref(`trips/${k}`).update({datetime,origin,destination:dest,updatedAt:Date.now()});
+    document.body.removeChild(overlay);
+    showToast('✅ Viaje actualizado');
+  };
+  overlay.onclick=e=>{if(e.target===overlay)document.body.removeChild(overlay);};
+}
 async function editTripAddress(tripKey, field, currentValue){
   const existing=document.getElementById('edit-addr-overlay');
   if(existing)document.body.removeChild(existing);
