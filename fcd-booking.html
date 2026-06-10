@@ -629,15 +629,23 @@ function showStep(n){
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
+async function getNextTripId(){
+  return new Promise((resolve, reject)=>{
+    db.ref('settings/tripCounter').transaction(current=>{
+      return (current||467) + 1;
+    }, (err, committed, snap)=>{
+      if(err||!committed) reject(err||new Error('Transaction failed'));
+      else resolve(snap.val().toString().padStart(4,'0'));
+    });
+  });
+}
+
 async function submitBooking(){
   const btn = document.getElementById('btn-confirm');
   const btnText = document.getElementById('btn-confirm-text');
   btn.disabled = true; btnText.innerHTML = '<div class="spinner"></div> Sending...';
   try {
-    const snap = await db.ref('trips').get();
-    let maxId = 266;
-    snap.forEach(c=>{ const v=c.val(); if(v&&v.id){ const n=parseInt(v.id); if(!isNaN(n)&&n>maxId)maxId=n; } });
-    const newId = (maxId+1).toString().padStart(4,'0');
+    const newId = await getNextTripId();
     await db.ref('trips').push({
       id:newId, clientName:bookingData.patientName, patientName:bookingData.patientName,
       bookedBy:bookingData.name, clientPhone:bookingData.phone, service:bookingData.service,
@@ -647,7 +655,7 @@ async function submitBooking(){
       isRoundTrip:bookingData.isRoundTrip||false, tripType:'ida', createdAt:Date.now(),
     });
     if(bookingData.isRoundTrip && bookingData.returnDatetime){
-      const returnId = (maxId+2).toString().padStart(4,'0');
+      const returnId = await getNextTripId();
       await db.ref('trips').push({
         id:returnId, clientName:bookingData.patientName, patientName:bookingData.patientName,
         bookedBy:bookingData.name, clientPhone:bookingData.phone, service:bookingData.service,
