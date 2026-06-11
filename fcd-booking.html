@@ -573,6 +573,7 @@ function clientLogout(){
   document.getElementById('cl-user').value = '';
   document.getElementById('cl-pass').value = '';
   document.getElementById('welcome-badge').style.display = 'none';
+  document.getElementById('btn-login-text').textContent = 'Sign In →';
   showStep(1); selectedService = null;
   document.querySelectorAll('.service-card').forEach(c=>c.classList.remove('selected'));
   switchPortalTab('new');
