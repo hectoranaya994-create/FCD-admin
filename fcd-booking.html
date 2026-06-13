@@ -562,7 +562,6 @@ function enterBookingPortal(isLoggedIn){
   renderServices();
   const now = new Date(Date.now() + 3600000);
   document.getElementById('b-datetime').min = now.toISOString().slice(0,16);
-  if(!document.getElementById('b-datetime').value) document.getElementById('b-datetime').value = now.toISOString().slice(0,16);
 }
 
 function clientLogout(){
