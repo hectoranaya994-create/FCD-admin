@@ -196,10 +196,17 @@ input.error,select.error{border-color:var(--red)!important}
               🔄 Include Return Trip
             </label>
             <div id="roundtrip-fields" style="display:none;margin-top:12px">
-              <div class="form-field" style="margin-bottom:0">
-                <label>Return Date *</label>
-                <input id="b-return-datetime" type="date">
-                <div class="field-error" id="err-return-datetime">Required field</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                <div class="form-field" style="margin-bottom:0">
+                  <label>Return Date *</label>
+                  <input id="b-return-datetime" type="date">
+                  <div class="field-error" id="err-return-datetime">Required field</div>
+                </div>
+                <div class="form-field" style="margin-bottom:0">
+                  <label>Return Time *</label>
+                  <input id="b-return-time" type="time">
+                  <div class="field-error" id="err-return-time">Required field</div>
+                </div>
               </div>
             </div>
           </div>
@@ -590,7 +597,7 @@ function goStep2(){ if(!selectedService){ document.getElementById('err-service')
 function goStep3(){
   const isRoundTrip = document.getElementById('b-roundtrip').checked;
   const fields = [{id:'b-name',err:'err-name'},{id:'b-patient',err:'err-patient'},{id:'b-phone',err:'err-phone'},{id:'b-origin',err:'err-origin'},{id:'b-dest',err:'err-dest'},{id:'b-datetime',err:'err-datetime'}];
-  if(isRoundTrip) fields.push({id:'b-return-datetime',err:'err-return-datetime'});
+  if(isRoundTrip){ fields.push({id:'b-return-datetime',err:'err-return-datetime'}); fields.push({id:'b-return-time',err:'err-return-time'}); }
   let valid = true;
   fields.forEach(f=>{ const el=document.getElementById(f.id); const errEl=document.getElementById(f.err); if(!el.value.trim()){ el.classList.add('error'); errEl.classList.add('show'); valid=false; } else{ el.classList.remove('error'); errEl.classList.remove('show'); } });
   if(!valid) return;
@@ -603,11 +610,12 @@ function goStep3(){
     destination: document.getElementById('b-dest').value.trim(),
     datetime: document.getElementById('b-datetime').value,
     returnDatetime: isRoundTrip ? document.getElementById('b-return-datetime').value : null,
+    returnTime: isRoundTrip ? document.getElementById('b-return-time').value : null,
     isRoundTrip, notes: document.getElementById('b-notes').value.trim(),
     clientKey: currentClient?.key || null,
   };
   const dtFormatted = new Date(bookingData.datetime).toLocaleString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'});
-  const returnFormatted = isRoundTrip ? new Date(bookingData.returnDatetime+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'}) : null;
+  const returnFormatted = isRoundTrip ? new Date(bookingData.returnDatetime+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'}) + (bookingData.returnTime ? ' at ' + bookingData.returnTime : '') : null;
   document.getElementById('summary-content').innerHTML = `
     <div class="summary-row"><span class="summary-label">Service</span><span class="summary-value">${bookingData.service}</span></div>
     <div class="summary-row"><span class="summary-label">Booked by</span><span class="summary-value">${bookingData.name}</span></div>
@@ -673,7 +681,7 @@ async function submitBooking(){
         id:returnId, clientName:bookingData.patientName, patientName:bookingData.patientName,
         bookedBy:bookingData.name, clientPhone:bookingData.phone, service:bookingData.service,
         serviceId:bookingData.serviceId, origin:bookingData.destination, destination:bookingData.origin,
-        datetime:bookingData.returnDatetime, adminNote:bookingData.notes||'', price:bookingData.price,
+        datetime:bookingData.returnDatetime + (bookingData.returnTime ? 'T' + bookingData.returnTime : 'T00:00'), adminNote:bookingData.notes||'', price:bookingData.price,
         status:'pending', source:'booking_portal', clientKey:bookingData.clientKey||null,
         isRoundTrip:true, tripType:'vuelta', linkedTripId:newId, createdAt:Date.now(),
       });
@@ -692,7 +700,7 @@ async function submitBooking(){
 function newBooking(){
   selectedService=null; bookingData={};
   document.getElementById('step-success').style.display='none';
-  ['b-name','b-patient','b-phone','b-origin','b-dest','b-notes','b-return-datetime'].forEach(id=>{ const el=document.getElementById(id); if(el)el.value=''; });
+  ['b-name','b-patient','b-phone','b-origin','b-dest','b-notes','b-return-datetime','b-return-time'].forEach(id=>{ const el=document.getElementById(id); if(el)el.value=''; });
   const rt=document.getElementById('b-roundtrip'); if(rt)rt.checked=false;
   document.getElementById('roundtrip-fields').style.display='none';
   if(currentClient){
