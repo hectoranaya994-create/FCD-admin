@@ -1129,10 +1129,6 @@ function renderTripsPage(){
   const pending=entries.filter(([k,t])=>t.status==='pending' && matchFilters(t)).sort((a,b)=>{
     function getSortTime(entry){
       const [k,t]=entry;
-      if(t.tripType==='vuelta'&&t.linkedTripId){
-        const idaTrip=Object.values(STATE.allTrips).find(lt=>lt.id===t.linkedTripId);
-        if(idaTrip&&idaTrip.datetime) return new Date(idaTrip.datetime).getTime();
-      }
       return new Date(t.datetime||t.createdAt||0).getTime();
     }
     const aTime=getSortTime(a); const bTime=getSortTime(b);
