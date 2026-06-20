@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#0a0f1a">
-<title>First Class Drive — Book a Service v1</title>
+<title>First Class Drive — Book a Service v2</title>
 <style>
 :root{
   --bg:#0a0f1a;--bg2:#111827;--bg3:#1a2235;--bg4:#243048;
@@ -96,7 +96,7 @@ input.error,select.error{border-color:var(--red)!important}
 <div class="header">
   <div class="header-logo">🚗</div>
   <div>
-    <div class="header-brand">First Class Drive <span class="header-ver">v1</span></div>
+    <div class="header-brand">First Class Drive <span class="header-ver">v2</span></div>
     <div class="header-sub">Booking Services</div>
   </div>
   <div class="header-user" id="header-user" style="display:none">
@@ -639,26 +639,41 @@ function showStep(n){
 }
 
 async function getNextTripId(){
+  let settled = false;
   try {
-    // Intentar transacción atómica primero
-    return await new Promise((resolve, reject)=>{
-      const timeout = setTimeout(()=>reject(new Error('timeout')), 5000);
+    const id = await new Promise((resolve, reject)=>{
+      const timeout = setTimeout(()=>{
+        if(!settled){ settled = true; reject(new Error('timeout')); }
+      }, 4000);
       db.ref('settings/tripCounter').transaction(current=>{
         return (current||467) + 1;
       }, (err, committed, snap)=>{
+        if(settled) return; // el timeout ya disparó el fallback, ignorar este callback tardío
+        settled = true;
         clearTimeout(timeout);
         if(err||!committed) reject(err||new Error('Transaction failed'));
         else resolve(snap.val().toString().padStart(4,'0'));
       });
     });
+    return id;
   } catch(e) {
-    // Fallback: leer el contador actual + timestamp para garantizar unicidad
     console.warn('Transaction failed, using fallback:', e.message);
-    const snap = await db.ref('settings/tripCounter').get();
-    const current = parseInt(snap.val()||467);
-    const newVal = current + 1;
-    await db.ref('settings/tripCounter').set(newVal);
-    return newVal.toString().padStart(4,'0');
+    // Fallback con reintento simple por si el primer intento de lectura falla
+    for(let attempt=0; attempt<2; attempt++){
+      try {
+        const snap = await db.ref('settings/tripCounter').get();
+        const current = parseInt(snap.val()||467);
+        const newVal = current + 1;
+        await db.ref('settings/tripCounter').set(newVal);
+        return newVal.toString().padStart(4,'0');
+      } catch(e2) {
+        if(attempt===1){
+          // Último recurso: usar timestamp para garantizar que la reserva no se pierda
+          console.error('Fallback also failed, using timestamp-based ID');
+          return (Date.now()%10000).toString().padStart(4,'0');
+        }
+      }
+    }
   }
 }
 
