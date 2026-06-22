@@ -719,6 +719,7 @@ async function submitBooking(){
     document.getElementById('step-success').style.display='block';
     document.getElementById('booking-ref').textContent='#'+newId;
     [1,2,3].forEach(i=>{ document.getElementById('si-'+i).classList.remove('active'); document.getElementById('si-'+i).classList.add('done'); });
+    btn.disabled = false; btnText.textContent = 'Submit Request';
     window.scrollTo({top:0,behavior:'smooth'});
   } catch(e){
     console.error(e); btnText.textContent='Submit Request'; btn.disabled=false;
@@ -733,6 +734,10 @@ async function submitBooking(){
 function newBooking(){
   selectedService=null; bookingData={};
   document.getElementById('step-success').style.display='none';
+  const btn = document.getElementById('btn-confirm');
+  const btnText = document.getElementById('btn-confirm-text');
+  if(btn) btn.disabled = false;
+  if(btnText) btnText.textContent = 'Submit Request';
   ['b-name','b-patient','b-phone','b-origin','b-dest','b-notes','b-return-datetime','b-return-time'].forEach(id=>{ const el=document.getElementById(id); if(el)el.value=''; });
   const rt=document.getElementById('b-roundtrip'); if(rt)rt.checked=false;
   document.getElementById('roundtrip-fields').style.display='none';
