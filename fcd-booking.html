@@ -438,7 +438,7 @@ function openEditBooking(tripKey){
     overlay.id = 'edit-booking-overlay';
     overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;overflow-y:auto';
 
-    const dtVal = t.datetime ? new Date(t.datetime).toISOString().slice(0,16) : '';
+    const dtVal = t.datetime ? t.datetime.slice(0,16) : '';
     overlay.innerHTML = `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:20px;width:100%;max-width:480px;overflow:hidden">
       <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
         <span style="font-size:16px;font-weight:700">✏️ Edit Booking #${t.id||tripKey.slice(-6)}</span>
@@ -569,7 +569,9 @@ function enterBookingPortal(isLoggedIn){
   }
   renderServices();
   const now = new Date(Date.now() + 3600000);
-  document.getElementById('b-datetime').min = now.toISOString().slice(0,16);
+  const pad = n => String(n).padStart(2,'0');
+  const minLocal = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  document.getElementById('b-datetime').min = minLocal;
 }
 
 function clientLogout(){
@@ -613,7 +615,7 @@ function goStep3(){
     returnDatetime: isRoundTrip ? document.getElementById('b-return-datetime').value : null,
     returnTime: isRoundTrip ? document.getElementById('b-return-time').value : null,
     isRoundTrip, notes: document.getElementById('b-notes').value.trim(),
-    clientKey: currentClient?.key || null,
+    clientKey: (currentClient && currentClient.key) || null,
   };
   const dtFormatted = new Date(bookingData.datetime).toLocaleString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'});
   const returnFormatted = isRoundTrip ? new Date(bookingData.returnDatetime+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'}) + (bookingData.returnTime ? ' at ' + bookingData.returnTime : '') : null;
