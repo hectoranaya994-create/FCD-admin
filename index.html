@@ -9,7 +9,7 @@
 <meta name="application-name" content="FCD Admin">
 <meta name="description" content="First Class Drive — Transportation Management System">
 <meta name="theme-color" content="#0a0c10">
-<title>First Class Drive — Admin Panel v68</title>
+<title>First Class Drive — Admin Panel v69</title>
 <style>
 :root{--bg:#0a0c10;--bg2:#111318;--bg3:#1a1d24;--bg4:#22262f;--border:#2a2e38;--border2:#363b47;--text:#e8eaf0;--text2:#9aa0b0;--text3:#636878;--accent:#3b82f6;--accent2:#60a5fa;--green:#22c55e;--green2:#16a34a;--red:#ef4444;--yellow:#f59e0b;--purple:#a855f7;--sidebar-w:220px;--header-h:56px}
 *{margin:0;padding:0;box-sizing:border-box}
@@ -208,7 +208,7 @@ select option{background:var(--bg3);color:var(--text)}
   <nav id="sidebar">
     <div class="sidebar-logo">
       <span>🚗 First Class Drive</span>
-      <span class="ver">v68</span>
+      <span class="ver">v69</span>
     </div>
     <div class="nav-section">Principal</div>
     <div class="nav-item active" onclick="showPage('dashboard')"><span>◈</span> Dashboard</div>
@@ -1456,7 +1456,7 @@ async function saveNewTrip(){
   showPage('trips');
 }
 async function editTripDate(tripKey, currentDatetime){
-  const current=currentDatetime?new Date(currentDatetime).toISOString().slice(0,16):'';
+  const current=currentDatetime?currentDatetime.slice(0,16):'';
   const existing=document.getElementById('edit-date-overlay');
   if(existing)document.body.removeChild(existing);
   const overlay=document.createElement('div');
@@ -1476,7 +1476,7 @@ async function editTripDate(tripKey, currentDatetime){
 function openNewTrip(){openModal('new-trip-modal');}
 function openUpdateTrip(k){
   const t=STATE.allTrips[k];if(!t)return;
-  const current=t.datetime?new Date(t.datetime).toISOString().slice(0,16):'';
+  const current=t.datetime?t.datetime.slice(0,16):'';
   const existing=document.getElementById('edit-date-overlay');if(existing)document.body.removeChild(existing);
   const overlay=document.createElement('div');
   overlay.id='edit-date-overlay';
