@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#0a0f1a">
-<title>First Class Drive — Book a Service v3</title>
+<title>First Class Drive — Book a Service v4</title>
 <style>
 :root{
   --bg:#0a0f1a;--bg2:#111827;--bg3:#1a2235;--bg4:#243048;
@@ -96,7 +96,7 @@ input.error,select.error{border-color:var(--red)!important}
 <div class="header">
   <div class="header-logo">🚗</div>
   <div>
-    <div class="header-brand">First Class Drive <span class="header-ver">v3</span></div>
+    <div class="header-brand">First Class Drive <span class="header-ver">v4</span></div>
     <div class="header-sub">Booking Services</div>
   </div>
   <div class="header-user" id="header-user" style="display:none">
@@ -457,6 +457,22 @@ function openEditBooking(tripKey){
           <label style="display:block;font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.4px">Service Date & Time</label>
           <input id="edit-datetime" type="datetime-local" value="${dtVal}" style="width:100%;background:var(--bg3);border:1px solid var(--border2);color:var(--text);padding:12px 14px;border-radius:12px;font-size:15px;outline:none">
         </div>
+        ${!t.isRoundTrip ? `
+        <div style="background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.2);border-radius:12px;padding:12px 14px">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;font-weight:600;color:var(--text2);margin-bottom:0">
+            <input type="checkbox" id="edit-add-return" style="width:auto" onchange="document.getElementById('edit-return-fields').style.display=this.checked?'flex':'none'"> 🔄 Add a return trip?
+          </label>
+          <div id="edit-return-fields" style="display:none;margin-top:12px;flex-direction:column;gap:10px">
+            <div>
+              <label style="display:block;font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.4px">Return Date</label>
+              <input id="edit-return-date" type="date" style="width:100%;background:var(--bg3);border:1px solid var(--border2);color:var(--text);padding:12px 14px;border-radius:12px;font-size:15px;outline:none">
+            </div>
+            <div>
+              <label style="display:block;font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.4px">Return Time</label>
+              <input id="edit-return-time" type="time" style="width:100%;background:var(--bg3);border:1px solid var(--border2);color:var(--text);padding:12px 14px;border-radius:12px;font-size:15px;outline:none">
+            </div>
+          </div>
+        </div>` : ''}
       </div>
       <div style="padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end">
         <button onclick="document.body.removeChild(document.getElementById('edit-booking-overlay'))" style="padding:10px 18px;background:transparent;border:1px solid var(--border2);color:var(--text2);border-radius:10px;font-size:14px;font-weight:600;cursor:pointer">Cancel</button>
@@ -473,10 +489,46 @@ async function saveEditBooking(tripKey){
   const dest = document.getElementById('edit-dest').value.trim();
   const datetime = document.getElementById('edit-datetime').value;
   if(!origin||!dest||!datetime){ alert('All fields are required.'); return; }
-  await db.ref(`trips/${tripKey}`).update({ origin, destination:dest, datetime, updatedAt:Date.now(), updatedBy:'client' });
-  document.body.removeChild(document.getElementById('edit-booking-overlay'));
-  loadMyBookings();
-  showPortalToast('✅ Booking updated successfully');
+
+  const addReturnEl = document.getElementById('edit-add-return');
+  const addReturn = addReturnEl && addReturnEl.checked;
+  let returnDate = '', returnTime = '';
+  if(addReturn){
+    returnDate = document.getElementById('edit-return-date').value;
+    returnTime = document.getElementById('edit-return-time').value;
+    if(!returnDate||!returnTime){ alert('Please complete the return date and time.'); return; }
+  }
+
+  const saveBtn = document.querySelector('#edit-booking-overlay button[onclick^="saveEditBooking"]');
+  if(saveBtn){ saveBtn.disabled = true; saveBtn.textContent = 'Saving...'; }
+
+  try {
+    const snap = await db.ref(`trips/${tripKey}`).get();
+    const t = snap.val() || {};
+    const updates = { origin, destination:dest, datetime, updatedAt:Date.now(), updatedBy:'client' };
+    if(addReturn) updates.isRoundTrip = true;
+    await withTimeout(db.ref(`trips/${tripKey}`).update(updates), 8000, 'edit-update');
+
+    if(addReturn){
+      const returnId = await getNextTripId();
+      await withTimeout(db.ref('trips').push({
+        id:returnId, clientName:t.clientName||'', patientName:t.patientName||t.clientName||'',
+        bookedBy:t.bookedBy||'', clientPhone:t.clientPhone||'', service:t.service||'',
+        serviceId:t.serviceId||null, origin:dest, destination:origin,
+        datetime:returnDate+'T'+returnTime, adminNote:t.adminNote||'', price:t.price||0,
+        status:'pending', source:'booking_portal', clientKey:t.clientKey||null,
+        isRoundTrip:true, tripType:'vuelta', linkedTripId:t.id||tripKey, createdAt:Date.now(),
+      }), 8000, 'edit-add-return');
+    }
+
+    document.body.removeChild(document.getElementById('edit-booking-overlay'));
+    loadMyBookings();
+    showPortalToast(addReturn ? '✅ Booking updated and return trip added' : '✅ Booking updated successfully');
+  } catch(e){
+    console.error(e);
+    if(saveBtn){ saveBtn.disabled = false; saveBtn.textContent = 'Save Changes'; }
+    alert('There was a problem saving your changes. Please check your connection and try again.');
+  }
 }
 
 // ── CANCEL BOOKING MODAL ──
