@@ -9,7 +9,7 @@
 <meta name="application-name" content="FCD Admin">
 <meta name="description" content="First Class Drive — Transportation Management System">
 <meta name="theme-color" content="#0a0c10">
-<title>First Class Drive — Admin Panel v67</title>
+<title>First Class Drive — Admin Panel v68</title>
 <style>
 :root{--bg:#0a0c10;--bg2:#111318;--bg3:#1a1d24;--bg4:#22262f;--border:#2a2e38;--border2:#363b47;--text:#e8eaf0;--text2:#9aa0b0;--text3:#636878;--accent:#3b82f6;--accent2:#60a5fa;--green:#22c55e;--green2:#16a34a;--red:#ef4444;--yellow:#f59e0b;--purple:#a855f7;--sidebar-w:220px;--header-h:56px}
 *{margin:0;padding:0;box-sizing:border-box}
@@ -208,7 +208,7 @@ select option{background:var(--bg3);color:var(--text)}
   <nav id="sidebar">
     <div class="sidebar-logo">
       <span>🚗 First Class Drive</span>
-      <span class="ver">v67</span>
+      <span class="ver">v68</span>
     </div>
     <div class="nav-section">Principal</div>
     <div class="nav-item active" onclick="showPage('dashboard')"><span>◈</span> Dashboard</div>
@@ -307,6 +307,7 @@ select option{background:var(--bg3);color:var(--text)}
               <option value="">👤 Todos los conductores</option>
             </select>
             <input type="date" id="trips-filter-date" onchange="renderTripsPage()" style="background:var(--bg2);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:7px;font-size:13px">
+            <input type="text" id="trips-filter-patient" placeholder="🔎 Buscar paciente..." oninput="renderTripsPage()" style="background:var(--bg2);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:7px;font-size:13px;min-width:160px">
             <button onclick="clearTripsFilter()" style="background:transparent;border:1px solid var(--border);color:var(--text3);padding:6px 12px;border-radius:7px;font-size:12px;cursor:pointer">✕ Limpiar</button>
             <span id="trips-filter-count" style="font-size:12px;color:var(--text3);margin-left:4px"></span>
           </div>
@@ -1116,12 +1117,14 @@ function renderTripsPage(){
 
   const filterDriver = (document.getElementById('trips-filter-driver')||{}).value||'';
   const filterDate  = (document.getElementById('trips-filter-date')||{}).value||'';
+  const filterPatient = ((document.getElementById('trips-filter-patient')||{}).value||'').trim().toLowerCase();
 
   function matchFilters(t){
     const mDrv = !filterDriver || (t.driverName||'') === filterDriver;
     const tripDate = t.datetime || t.createdAt;
     const mDate = !filterDate || (tripDate && new Date(tripDate).toISOString().startsWith(filterDate));
-    return mDrv && mDate;
+    const mPatient = !filterPatient || (t.patientName||t.clientName||'').toLowerCase().includes(filterPatient);
+    return mDrv && mDate && mPatient;
   }
 
   const entries=Object.entries(STATE.allTrips);
@@ -1199,8 +1202,10 @@ function renderHistoryPage(){
 function clearTripsFilter(){
   const d = document.getElementById('trips-filter-driver');
   const f = document.getElementById('trips-filter-date');
+  const p = document.getElementById('trips-filter-patient');
   if(d) d.value='';
   if(f) f.value='';
+  if(p) p.value='';
   renderTripsPage();
 }
 function filterHistory(){renderHistoryPage();}
