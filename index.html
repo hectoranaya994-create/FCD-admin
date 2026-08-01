@@ -317,7 +317,7 @@ select option{background:var(--bg3);color:var(--text)}
         </div>
         <div id="trips-active"><div class="table-wrap"><table><thead><tr><th>ID</th><th>Cliente</th><th>Hora</th><th>Origen</th><th>Destino</th><th>Conductor</th><th>Estado</th><th>Acciones</th></tr></thead><tbody id="trips-active-body"></tbody></table></div></div>
         <div id="trips-pending" style="display:none"><div class="table-wrap"><table><thead><tr><th>ID</th><th>Cliente</th><th>Fecha/Hora</th><th>Origen</th><th>Destino</th><th>Estado</th><th>Acciones</th></tr></thead><tbody id="trips-pending-body"></tbody></table></div></div>
-        <div id="trips-completed" style="display:none"><div class="table-wrap"><table><thead><tr><th>ID</th><th>Cliente</th><th>Conductor</th><th>Origen</th><th>Destino</th><th>Fecha</th><th>USD</th><th>Pago</th><th>Recibo</th></tr></thead><tbody id="trips-completed-body"></tbody></table></div></div>
+        <div id="trips-completed" style="display:none"><div class="table-wrap"><table><thead><tr><th>ID</th><th>Cliente</th><th>Conductor</th><th>Origen</th><th>Destino</th><th>Fecha</th><th>USD</th><th>Pago</th><th>Observaciones</th><th>Recibo</th></tr></thead><tbody id="trips-completed-body"></tbody></table></div></div>
       </div>
 
       <!-- PAYMENTS -->
@@ -1164,7 +1164,10 @@ function renderTripsPage(){
 
   const cb=document.getElementById('trips-completed-body');
   if(completed.length===0){cb.innerHTML=`<tr><td colspan="9" class="empty-state">Sin viajes completados</td></tr>`;}
-  else cb.innerHTML=completed.map(([k,t])=>`<tr><td><strong>#${t.id||k.slice(-4)}</strong></td><td>${t.clientName||'\u2014'}</td><td>${t.driverName||'\u2014'}</td><td style="font-size:11.5px;max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${t.origin||''}">${t.origin||'\u2014'}</td><td style="font-size:11.5px;max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${t.destination||''}">${t.destination||'\u2014'}</td><td>${t.completedAt?new Date(t.completedAt).toLocaleDateString('es'):'\u2014'}</td><td style="color:var(--green)">$${t.price||0}</td><td>${t.paymentMethod||'\u2014'}</td><td><button class="btn btn-ghost btn-sm" onclick="openReceipt('${k}')">\U0001f9fe Recibo</button></td></tr>`).join('');
+  else cb.innerHTML=completed.map(([k,t])=>{
+    const obsHtml=t.driverNotes?`📝 ${t.driverNotes}`:'—';
+    return `<tr><td><strong>#${t.id||k.slice(-4)}</strong></td><td>${t.clientName||'—'}</td><td>${t.driverName||'—'}</td><td style="font-size:11.5px;max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${t.origin||''}">${t.origin||'—'}</td><td style="font-size:11.5px;max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${t.destination||''}">${t.destination||'—'}</td><td>${t.completedAt?new Date(t.completedAt).toLocaleDateString('es'):'—'}</td><td style="color:var(--green)">$${t.price||0}</td><td>${t.paymentMethod||'—'}</td><td style="font-size:11px;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text2)" title="${t.driverNotes||''}">${obsHtml}</td><td><button class="btn btn-ghost btn-sm" onclick="openReceipt('${k}')">🧾 Recibo</button></td></tr>`;
+  }).join('');
 }
 
 function tripStatusBadge(s){const map={assigned:'<span class="badge badge-gray">\U0001f4cb Asignado</span>',onway:'<span class="badge badge-blue">\U0001f697 En camino</span>',arrived:'<span class="badge badge-yellow">\U0001f4cd En recogida</span>',started:'<span class="badge badge-yellow">\U0001f697 En ruta</span>',in_progress:'<span class="badge badge-yellow">En curso</span>',completed:'<span class="badge badge-purple">Completado</span>',approved:'<span class="badge badge-green">Aprobado</span>',pending:'<span class="badge badge-gray">Pendiente</span>',cancelled:'<span class="badge badge-red">\u2715 Cancelado</span>',rejected:'<span class="badge badge-red">Rechazado</span>'};return map[s]||`<span class="badge badge-gray">${s}</span>`;}
