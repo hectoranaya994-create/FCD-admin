@@ -572,10 +572,10 @@ select option{background:var(--bg3);color:var(--text)}
         <div id="set-notif" style="display:none">
           <div class="card"><div class="card-title">🔔 Alertas del sistema</div>
             <div style="display:flex;flex-direction:column;gap:10px">
-              <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" checked style="width:auto"> Nuevo viaje agendado</label>
-              <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" checked style="width:auto"> Viaje sin conductor (>15 min)</label>
-              <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" checked style="width:auto"> Pago recibido</label>
-              <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" style="width:auto"> Reporte diario por email</label>
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="notif-cb-newtrip" checked style="width:auto"> Nuevo viaje agendado</label>
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="notif-cb-nodriver" checked style="width:auto"> Viaje sin conductor (>15 min)</label>
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="notif-cb-payment" checked style="width:auto"> Pago recibido</label>
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="notif-cb-dailyreport" style="width:auto"> Reporte diario por email</label>
             </div>
             <div class="form-group" style="margin-top:12px"><label>Email para alertas</label><input id="notif-email" placeholder="admin@firstclassdrive.com"></div>
             <button class="btn btn-primary" onclick="saveNotifSettings()">Guardar preferencias</button>
@@ -910,7 +910,7 @@ function loadFareRanges() {
 let STATE = {
   adminLogged:false, driverLogged:false, currentDriverKey:null, currentDriverData:null,
   activeTripKey:null, activeTripData:null, timerInterval:null, timerSeconds:0,
-  allTrips:{}, allDrivers:{}, allClients:{}, allExpenses:{},
+  allTrips:{}, allDrivers:{}, allClients:{}, allExpenses:{}, allPayments:{},
   currentPage:'dashboard', pendingApprovals:{}, assignTripKey:null, approveTripKey:null,
   payMethod:'Efectivo', reportPeriod:'week', notifs:[],
 };
@@ -981,12 +981,33 @@ function switchTab(el, targetId) {
   ids.forEach(tid=>{const e=document.getElementById(tid);if(e)e.style.display=tid===targetId?'block':'none';});
 }
 
+let SETTINGS_CACHE = {};
 function startFirebaseListeners() {
   loadFareRanges(); loadCatalog();
   db.ref('drivers').on('value', snap=>{ STATE.allDrivers=snap.val()||{}; renderDashboardDrivers(); renderDriversPage(); updateDriverStats(); populateDriverSelects(); renderWADrivers(); });
   db.ref('trips').on('value', snap=>{ STATE.allTrips=snap.val()||{}; renderDashboardStats(); renderTripsPage(); renderPendingApprovals(); renderHistoryPage(); updateTripsBadge(); });
   db.ref('clients').on('value', snap=>{ STATE.allClients=snap.val()||{}; renderClientsPage(); });
   db.ref('expenses').on('value', snap=>{ STATE.allExpenses=snap.val()||{}; renderExpenses(); });
+  db.ref('payments').on('value', snap=>{ STATE.allPayments=snap.val()||{}; renderPendingApprovals(); });
+  db.ref('settings').on('value', snap=>{ SETTINGS_CACHE=snap.val()||{}; populateSettingsFields(); });
+}
+function populateSettingsFields(){
+  const c = SETTINGS_CACHE.company||{};
+  const setVal=(id,v)=>{const el=document.getElementById(id); if(el && document.activeElement!==el) el.value=v||'';};
+  setVal('set-name', c.name); setVal('set-phone', c.phone); setVal('set-email', c.email); setVal('set-addr', c.address); setVal('set-web', c.web);
+  const b = SETTINGS_CACHE.brand||{};
+  if(document.getElementById('set-color') && document.activeElement!==document.getElementById('set-color')) document.getElementById('set-color').value = b.color||'#3b82f6';
+  setVal('set-slogan', b.slogan);
+  const mk = SETTINGS_CACHE.mapsKey||{};
+  setVal('maps-key', mk.key);
+  const mr=document.getElementById('maps-region'); if(mr && mk.region && document.activeElement!==mr) mr.value=mk.region;
+  const n = SETTINGS_CACHE.notifications||{};
+  const setChk=(id,v)=>{const el=document.getElementById(id); if(el) el.checked = v!==false;};
+  if(SETTINGS_CACHE.notifications){
+    setChk('notif-cb-newtrip', n.newTrip); setChk('notif-cb-nodriver', n.noDriver15); setChk('notif-cb-payment', n.paymentReceived);
+    const dr=document.getElementById('notif-cb-dailyreport'); if(dr) dr.checked = !!n.dailyReport;
+  }
+  setVal('notif-email', n.email);
 }
 function refreshData() { showToast('\u21bb Datos actualizados'); }
 
@@ -1266,11 +1287,19 @@ function renderPendingApprovals(){
     return `<div style="background:var(--bg3);border-radius:8px;padding:12px;margin-bottom:8px;${t.isRoundTrip?'border-left:3px solid var(--purple)':''}"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><div><strong>#${t.id||k.slice(-4)}</strong>${t.tripType?`<span class="badge ${t.tripType==='ida'?'badge-blue':'badge-purple'}" style="font-size:10px;margin-left:4px">${t.tripType==='ida'?'\u2192 Ida':'\u{1f504} Vuelta'}</span>`:''}<span style="font-size:12px;color:var(--text3);margin-left:6px">${t.service||'\u2014'}</span>${t.datetime?`<span style="font-size:11px;color:var(--accent2);margin-left:6px">\u{1f550} ${new Date(t.datetime).toLocaleString('es',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}</span>`:''}</div><span style="font-size:15px;font-weight:700;color:var(--green)">$${t.price||0}</span></div><div style="font-size:12.5px;color:var(--text2)">Cliente: ${t.clientName||'\u2014'} \u00b7 Conductor: ${t.driverName||'\u2014'}${t.miles?` \u00b7 ${t.miles} mi${t.gpsTracked?' \u{1f4cd}':''}`:''} ${t.driverNotes?`<br>Notas: ${t.driverNotes}${t.driverNotesEditedAt?' \u270e':''}`:''}</div>${linkedHtml}<div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap"><button class="btn btn-green btn-sm" onclick="openApprove('${k}')">\u2705 Aprobar</button>${showApproveAll?`<button class="btn btn-sm" style="background:var(--purple);color:#fff" onclick="approveRoundTrip('${k}','${linkedKey}')">\u2705 Aprobar ambos ($${totalBoth})</button>`:''}<button class="btn btn-ghost btn-sm" onclick="openReceipt('${k}')">\u{1f9fe} Recibo</button><button class="btn btn-primary btn-sm" onclick="openEditNotes('${k}')" style="border-color:#6366f1;color:#6366f1">\u270f\ufe0f Observaci\u00f3n</button><button class="btn btn-red btn-sm" onclick="rejectTrip('${k}')">\u2715 Rechazar</button></div></div>`;
   }).join('');
   const approved=Object.values(STATE.allTrips).filter(t=>t.status==='approved');
+  const manualPayments=Object.values(STATE.allPayments||{});
   const today=new Date().toDateString();
-  const todayTotal=approved.filter(t=>t.completedAt&&new Date(t.completedAt).toDateString()===today).reduce((s,t)=>s+(parseFloat(t.price)||0),0);
+  const todayFromTrips=approved.filter(t=>t.completedAt&&new Date(t.completedAt).toDateString()===today).reduce((s,t)=>s+(parseFloat(t.price)||0),0);
+  const todayFromManual=manualPayments.filter(p=>p.createdAt&&new Date(p.createdAt).toDateString()===today).reduce((s,p)=>s+(parseFloat(p.amount)||0),0);
+  const todayTotal=todayFromTrips+todayFromManual;
   const el=document.getElementById('pay-today');if(el)el.textContent=`$${todayTotal.toLocaleString()}`;
   const lp=document.getElementById('last-payments-list');
-  if(lp){const last=approved.sort((a,b)=>(b.completedAt||0)-(a.completedAt||0)).slice(0,5);lp.innerHTML=last.length===0?'<div class="empty-state">Sin pagos registrados</div>':`<table style="width:100%;font-size:12.5px;border-collapse:collapse">${last.map(t=>`<tr><td style="padding:6px 0;border-top:1px solid var(--border)">${t.clientName||'\u2014'}</td><td>${t.paymentMethod||'\u2014'}</td><td style="color:var(--green);font-weight:700">$${t.price||0}</td></tr>`).join('')}</table>`;}
+  if(lp){
+    const fromTrips=approved.map(t=>({label:t.clientName||'\u2014',method:t.paymentMethod||'\u2014',amount:parseFloat(t.price)||0,ts:t.completedAt||t.approvedAt||0}));
+    const fromManual=manualPayments.map(p=>({label:p.tripId?`Viaje #${p.tripId}`:(p.source==='rate-calculator'?'Rate Calculator':'Pago manual'),method:p.method||'\u2014',amount:parseFloat(p.amount)||0,ts:p.createdAt||0}));
+    const merged=[...fromTrips,...fromManual].sort((a,b)=>b.ts-a.ts).slice(0,5);
+    lp.innerHTML=merged.length===0?'<div class="empty-state">Sin pagos registrados</div>':`<table style="width:100%;font-size:12.5px;border-collapse:collapse">${merged.map(p=>`<tr><td style="padding:6px 0;border-top:1px solid var(--border)">${p.label}</td><td>${p.method}</td><td style="color:var(--green);font-weight:700">$${p.amount.toFixed(2)}</td></tr>`).join('')}</table>`;
+  }
 }
 
 function approveRoundTrip(idaKey, vueltaKey){
@@ -1324,7 +1353,15 @@ async function confirmApproveRoundTrip(idaKey,vueltaKey){
   const overlay=document.getElementById('rt-approve-overlay');if(overlay)document.body.removeChild(overlay);
   showToast(`\u2705 Ida y vuelta aprobados \u2014 Total $${total}`);
 }
-async function registerPayment(){showToast('Pago registrado');}
+async function registerPayment(){
+  const tripId=document.getElementById('pay-trip-id').value.trim();
+  const amount=parseFloat(document.getElementById('pay-amount').value);
+  const notes=document.getElementById('pay-notes').value.trim();
+  if(!amount||amount<=0){showToast('Ingresa un monto v\u00e1lido','error');return;}
+  await db.ref('payments').push({tripId:tripId||null,amount,method:STATE.payMethod,notes,source:'manual',createdAt:Date.now()});
+  document.getElementById('pay-trip-id').value='';document.getElementById('pay-amount').value='';document.getElementById('pay-notes').value='';
+  showToast(`\u2705 Pago de $${amount.toFixed(2)} registrado`);
+}
 async function rejectTrip(k){
   const t=STATE.allTrips[k];if(!t)return;
   showNoteModal('\u00bfPor qu\u00e9 rechazas este servicio?', async(note)=>{
@@ -1780,10 +1817,35 @@ function renderFareRangesUI(){
 }
 function addFareRange(){FARE_RANGES.push({from:0,to:0,price:0});renderFareRangesUI();}
 async function saveFareRanges(){await db.ref('settings/fareRanges').set(FARE_RANGES);showToast('\u2705 Tarifas guardadas');}
-async function saveSettings(){showToast('\u2705 Configuraci\u00f3n guardada');}
-async function saveBrand(){showToast('\u2705 Marca actualizada');}
-async function saveMapsKey(){showToast('\u2705 API Key guardada');}
-async function saveNotifSettings(){showToast('\u2705 Alertas guardadas');}
+async function saveSettings(){
+  const data={name:document.getElementById('set-name').value.trim(),phone:document.getElementById('set-phone').value.trim(),email:document.getElementById('set-email').value.trim(),address:document.getElementById('set-addr').value.trim(),web:document.getElementById('set-web').value.trim(),updatedAt:Date.now()};
+  await db.ref('settings/company').set(data);
+  showToast('\u2705 Configuraci\u00f3n guardada');
+}
+async function saveBrand(){
+  const data={color:document.getElementById('set-color').value,slogan:document.getElementById('set-slogan').value.trim(),updatedAt:Date.now()};
+  await db.ref('settings/brand').set(data);
+  showToast('\u2705 Marca actualizada (el logo no se guarda: subir logo requiere almacenamiento de archivos, a\u00fan no configurado)');
+}
+async function saveMapsKey(){
+  const key=document.getElementById('maps-key').value.trim();
+  const region=document.getElementById('maps-region').value;
+  if(!key){showToast('Ingresa una API Key','error');return;}
+  await db.ref('settings/mapsKey').set({key,region,updatedAt:Date.now()});
+  showToast('\u2705 Key guardada como referencia \u2014 para activarla en el mapa hay que actualizar el script de Google Maps en el HTML');
+}
+async function saveNotifSettings(){
+  const data={
+    newTrip:document.getElementById('notif-cb-newtrip').checked,
+    noDriver15:document.getElementById('notif-cb-nodriver').checked,
+    paymentReceived:document.getElementById('notif-cb-payment').checked,
+    dailyReport:document.getElementById('notif-cb-dailyreport').checked,
+    email:document.getElementById('notif-email').value.trim(),
+    updatedAt:Date.now()
+  };
+  await db.ref('settings/notifications').set(data);
+  showToast('\u2705 Alertas guardadas');
+}
 function calcRate(){
   const base=parseFloat(document.getElementById('rate-base').value)||0;
   const mile=parseFloat(document.getElementById('rate-mile').value)||0;
@@ -1807,7 +1869,15 @@ async function saveRateDefaults(){
   await db.ref('settings/banderazo').set(banderazo);
   showToast(`\u2705 Banderazo $${banderazo} guardado como predeterminado`);
 }
-async function registerRateCobro(){showToast(`\u2705 Cobro registrado: ${document.getElementById('rb-total').textContent}`);}
+async function registerRateCobro(){
+  const totalTxt=document.getElementById('rb-total').textContent.replace('$','');
+  const amount=parseFloat(totalTxt)||0;
+  if(amount<=0){showToast('El total debe ser mayor a cero','error');return;}
+  const miles=parseFloat(document.getElementById('rate-miles').value)||0;
+  const wait=parseFloat(document.getElementById('rate-wait').value)||0;
+  await db.ref('payments').push({tripId:null,amount,method:'Efectivo',notes:`Rate Calculator \u2014 ${miles} mi, ${wait} min espera`,source:'rate-calculator',createdAt:Date.now()});
+  showToast(`\u2705 Cobro de $${amount.toFixed(2)} registrado`);
+}
 
 let _drvTimer=null;
 function showDriverView(){document.getElementById('driver-overlay').classList.add('show');if(STATE.driverLogged&&STATE.currentDriverData){renderDriverDashboard();}else{document.getElementById('drv-login').style.display='block';document.getElementById('drv-dashboard').style.display='none';}}
