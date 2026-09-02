@@ -907,6 +907,18 @@ function loadFareRanges() {
   });
 }
 
+// Convierte una fecha (Date, timestamp o string) a "YYYY-MM-DD" en HORA LOCAL del navegador.
+// Se usa para comparar contra <input type="date">, que también representa el día en hora local.
+// (Antes se usaba toISOString(), que convierte a UTC y hacía que viajes de la noche
+// "desaparecieran" del día correcto en los filtros de Trips e History.)
+function toLocalDateStr(value){
+  const d = new Date(value);
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+
 let STATE = {
   adminLogged:false, driverLogged:false, currentDriverKey:null, currentDriverData:null,
   activeTripKey:null, activeTripData:null, timerInterval:null, timerSeconds:0,
@@ -1159,7 +1171,7 @@ function renderTripsPage(){
   function matchFilters(t){
     const mDrv = !filterDriver || (t.driverName||'') === filterDriver;
     const tripDate = t.datetime || t.createdAt;
-    const mDate = !filterDate || (tripDate && new Date(tripDate).toISOString().startsWith(filterDate));
+    const mDate = !filterDate || (tripDate && toLocalDateStr(tripDate) === filterDate);
     const mPatient = !filterPatient || (t.patientName||t.clientName||'').toLowerCase().includes(filterPatient);
     return mDrv && mDate && mPatient;
   }
@@ -1224,7 +1236,7 @@ function renderHistoryPage(){
   const filtered=entries.filter(([k,t])=>{
     const ms=!s||(t.clientName||'').toLowerCase().includes(s.toLowerCase())||(t.driverName||'').toLowerCase().includes(s.toLowerCase());
     const refDate=t.completedAt||t.cancelledAt||t.createdAt;
-    const md=!d||(refDate&&new Date(refDate).toISOString().startsWith(d));
+    const md=!d||(refDate&&toLocalDateStr(refDate)===d);
     const mdrv=!drv||(t.driverName||'')=== drv;
     const mst=!st||t.status===st;
     return ms&&md&&mdrv&&mst;
@@ -1450,6 +1462,10 @@ function openAssign(tripKey){
 async function confirmAssign(){
   const k=STATE.assignTripKey;if(!k)return;
   const sel=document.getElementById('assign-driver-sel');
+  if(!sel || sel.selectedIndex < 0 || !sel.value){
+    showToast('No hay conductor seleccionado — verifica que haya conductores disponibles (activos)','error');
+    return;
+  }
   const driverKey=sel.value; const driverName=sel.options[sel.selectedIndex].text.split(' \u2014 ')[0];
   const note=document.getElementById('assign-note').value;
   await db.ref(`trips/${k}`).update({driverKey,driverName,status:'assigned',assignedAt:Date.now(),adminNote:note||''});
@@ -1460,7 +1476,14 @@ async function confirmAssign(){
 function populateDriverSelects(){
   const sel=document.getElementById('assign-driver-sel');if(!sel)return;
   const drivers=Object.entries(STATE.allDrivers);
-  sel.innerHTML=drivers.length===0?'<option>Sin conductores</option>':drivers.filter(([k,d])=>!d.inactive).map(([k,d])=>`<option value="${k}">${d.name||k} \u2014 ${getVehicleStr(d)}</option>`).join('');
+  const activos=drivers.filter(([k,d])=>!d.inactive);
+  if(drivers.length===0){
+    sel.innerHTML='<option value="">Sin conductores</option>';
+  } else if(activos.length===0){
+    sel.innerHTML='<option value="">Sin conductores activos \u2014 activa alguno en Drivers</option>';
+  } else {
+    sel.innerHTML=activos.map(([k,d])=>`<option value="${k}">${d.name||k} \u2014 ${getVehicleStr(d)}</option>`).join('');
+  }
   const expSel=document.getElementById('exp-driver');
   if(expSel) expSel.innerHTML='<option>\u2014 Seleccionar \u2014</option>'+drivers.map(([k,d])=>`<option value="${k}">${d.name||k}</option>`).join('');
 }
@@ -1604,7 +1627,19 @@ function renderClientsPage(){
   if(clients.length===0){container.innerHTML='<div class="empty-state"><div class="empty-icon">\u{1f465}</div>Sin clientes registrados</div>';return;}
   container.innerHTML=clients.map(([k,c])=>`<div class="driver-card" style="flex-direction:column;align-items:flex-start;gap:8px;cursor:default"><div style="display:flex;align-items:center;gap:10px;width:100%"><div class="driver-avatar">${initials(c.name)}</div><div class="driver-info"><div class="driver-name">${c.name||'\u2014'}</div><div class="driver-sub">${c.phone||'\u2014'} \u00b7 ${c.insurance||'Sin seguro'}</div></div></div><div style="display:flex;align-items:center;gap:6px;width:100%"><span style="flex:1"></span>${c.portalUser?`<span style="font-size:11px;color:var(--green);background:rgba(34,197,94,.1);padding:2px 8px;border-radius:8px;border:1px solid var(--green)">\u{1f511} ${c.portalUser}</span>`:''}<button class="btn btn-ghost btn-sm" onclick="openClientPortalModal('${k}')">\u{1f511} Portal</button><button class="btn btn-ghost btn-sm" onclick="editClient('${k}')">\u270f\ufe0f Editar</button></div></div>`).join('');
 }
-function openClientModal(){openModal('client-modal');}
+function openClientModal(){
+  document.querySelector('#client-modal .modal-title').textContent='+ Nuevo Cliente';
+  document.getElementById('cli-name').value='';
+  document.getElementById('cli-phone').value='';
+  document.getElementById('cli-email').value='';
+  document.getElementById('cli-addr').value='';
+  document.getElementById('cli-insurance').value='';
+  document.getElementById('cli-policy').value='';
+  document.getElementById('cli-notes').value='';
+  const saveBtn=document.querySelector('#client-modal .modal-footer .btn-primary');
+  if(saveBtn){saveBtn.setAttribute('onclick','saveClient()');saveBtn.textContent='\u2713 Guardar cliente';}
+  openModal('client-modal');
+}
 async function saveClient(){
   const name=document.getElementById('cli-name').value.trim();
   if(!name){showToast('Nombre requerido','error');return;}
@@ -1667,7 +1702,26 @@ async function toggleDriverActive(driverKey, action){
   showToast(inactivar?`\u{1f6ab} ${name} inactivado`:`\u2705 ${name} activado`);
 }
 
-function openDriverModal(){document.getElementById('drv-modal-title').textContent='+ Nuevo Conductor';openModal('driver-modal');}
+function openDriverModal(){
+  document.getElementById('drv-modal-title').textContent='+ Nuevo Conductor';
+  document.getElementById('drv-fullname').value='';
+  document.getElementById('drv-phone').value='';
+  document.getElementById('drv-email').value='';
+  document.getElementById('drv-license').value='';
+  document.getElementById('drv-plate').value='';
+  document.getElementById('drv-vtype').value='Toyota Sienna';
+  document.getElementById('drv-vcolor').value='';
+  document.getElementById('drv-vyear').value='';
+  document.getElementById('drv-username').value='';
+  document.getElementById('drv-password').value='';
+  ['cert-wc','cert-nemt','cert-bari','cert-air'].forEach(id=>{const el=document.getElementById(id); if(el) el.checked=false;});
+  const saveBtn=document.querySelector('#driver-modal .modal-footer .btn-primary');
+  if(saveBtn){saveBtn.setAttribute('onclick','saveDriver()');saveBtn.textContent='\u2713 Guardar conductor';}
+  // Vuelve siempre a la primera pestaña (Personal) al abrir para un conductor nuevo
+  const firstTab=document.querySelector('#driver-modal .tabs .tab');
+  if(firstTab) switchTab(firstTab,'drv-tab-personal');
+  openModal('driver-modal');
+}
 let _resetDriverKey = null;
 async function resetDriverPassword(driverKey, driverName){
   _resetDriverKey = driverKey;
@@ -1694,6 +1748,11 @@ async function saveDriver(){
   const password=document.getElementById('drv-password').value;
   const name=document.getElementById('drv-fullname').value.trim();
   if(!username||!name){showToast('Nombre y usuario requeridos','error');return;}
+  const existing = await db.ref(`drivers/${username}`).get();
+  if(existing.exists()){
+    showToast(`Ya existe un conductor con el usuario "${username}" — usa otro usuario o edítalo desde su tarjeta`,'error');
+    return;
+  }
   const hash=await sha256(password);
   await db.ref(`drivers/${username}`).set({name,phone:document.getElementById('drv-phone').value,email:document.getElementById('drv-email').value,license:document.getElementById('drv-license').value,vehicle:{type:document.getElementById('drv-vtype').value,color:document.getElementById('drv-vcolor').value,year:document.getElementById('drv-vyear').value},plate:document.getElementById('drv-plate').value,passwordHash:hash,status:'available',createdAt:Date.now()});
   closeModal('driver-modal');showToast(`\u2705 Conductor ${name} guardado`);
@@ -1765,6 +1824,10 @@ function openReassign(tripKey) {
 async function confirmReassign() {
   if (!reassignTripKey) return;
   const sel = document.getElementById('reassign-driver-sel');
+  if(!sel || sel.selectedIndex < 0 || !sel.value){
+    showToast('No hay conductor seleccionado \u2014 verifica que haya conductores disponibles','error');
+    return;
+  }
   const driverKey = sel.value; const driverName = sel.options[sel.selectedIndex].text.split(' \u2014 ')[0];
   const note = document.getElementById('reassign-note').value;
   const oldTrip = STATE.allTrips[reassignTripKey];
