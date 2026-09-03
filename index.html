@@ -1177,7 +1177,11 @@ function renderTripsPage(){
   }
 
   const entries=Object.entries(STATE.allTrips);
-  const active=entries.filter(([k,t])=>['assigned','onway','arrived','started','in_progress'].includes(t.status) && matchFilters(t));
+  const active=entries.filter(([k,t])=>['assigned','onway','arrived','started','in_progress'].includes(t.status) && matchFilters(t)).sort((a,b)=>{
+    const aTime=new Date(a[1].datetime||a[1].createdAt||0).getTime();
+    const bTime=new Date(b[1].datetime||b[1].createdAt||0).getTime();
+    return aTime-bTime; // de menor a mayor: el viaje más próximo en el tiempo aparece primero
+  });
   const pending=entries.filter(([k,t])=>t.status==='pending' && matchFilters(t)).sort((a,b)=>{
     function getSortTime(entry){
       const [k,t]=entry;
