@@ -9,7 +9,7 @@
 <meta name="application-name" content="FCD Admin">
 <meta name="description" content="First Class Drive — Transportation Management System">
 <meta name="theme-color" content="#0a0c10">
-<title>First Class Drive — Admin Panel v69</title>
+<title>First Class Drive — Admin Panel v70</title>
 <style>
 :root{--bg:#0a0c10;--bg2:#111318;--bg3:#1a1d24;--bg4:#22262f;--border:#2a2e38;--border2:#363b47;--text:#e8eaf0;--text2:#9aa0b0;--text3:#636878;--accent:#3b82f6;--accent2:#60a5fa;--green:#22c55e;--green2:#16a34a;--red:#ef4444;--yellow:#f59e0b;--purple:#a855f7;--sidebar-w:220px;--header-h:56px}
 *{margin:0;padding:0;box-sizing:border-box}
@@ -208,7 +208,7 @@ select option{background:var(--bg3);color:var(--text)}
   <nav id="sidebar">
     <div class="sidebar-logo">
       <span>🚗 First Class Drive</span>
-      <span class="ver">v69</span>
+      <span class="ver">v70</span>
     </div>
     <div class="nav-section">Principal</div>
     <div class="nav-item active" onclick="showPage('dashboard')"><span>◈</span> Dashboard</div>
@@ -1228,10 +1228,14 @@ function renderTripsPage(){
   const cb=document.getElementById('trips-completed-body');
   if(completed.length===0){cb.innerHTML=`<tr><td colspan="12" class="empty-state">Sin viajes completados</td></tr>`;}
   else cb.innerHTML=completed.map(([k,t])=>{
-    const obsHtml=t.driverNotes?`📝 ${t.driverNotes}`:'—';
+    const obsPartes=[];
+    if(t.adminNote) obsPartes.push(`💬 ${t.adminNote}`);
+    if(t.driverNotes) obsPartes.push(`📝 ${t.driverNotes}`);
+    const obsHtml=obsPartes.length?obsPartes.join(' · '):'—';
+    const obsTitle=[t.adminNote,t.driverNotes].filter(Boolean).join(' | ');
     const horaRecogida=t.startedAt?new Date(t.startedAt).toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'}):(t.arrivedAt?new Date(t.arrivedAt).toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'}):'—');
     const horaLlegada=t.completedAt?new Date(t.completedAt).toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'}):'—';
-    return `<tr><td><strong>#${t.id||k.slice(-4)}</strong></td><td>${t.clientName||'—'}</td><td>${t.driverName||'—'}</td><td style="font-size:11.5px;max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${t.origin||''}">${t.origin||'—'}</td><td style="font-size:11.5px;max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${t.destination||''}">${t.destination||'—'}</td><td style="font-size:11.5px;color:var(--accent2);white-space:nowrap">${horaRecogida}</td><td style="font-size:11.5px;color:var(--green);white-space:nowrap">${horaLlegada}</td><td>${t.completedAt?new Date(t.completedAt).toLocaleDateString('es'):'—'}</td><td style="color:var(--green)">$${t.price||0}</td><td>${t.paymentMethod||'—'}</td><td style="font-size:11px;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text2)" title="${t.driverNotes||''}">${obsHtml}${t.driverNotesEditedAt?' ✎':''}</td><td style="display:flex;gap:4px;flex-wrap:wrap"><button class="btn btn-ghost btn-sm" onclick="openReceipt('${k}')">🧾 Recibo</button><button class="btn btn-primary btn-sm" onclick="openEditCompleted('${k}')" style="border-color:#f59e0b;color:#f59e0b">✏️ Editar</button><button class="btn btn-primary btn-sm" onclick="openEditNotes('${k}')" style="border-color:#6366f1;color:#6366f1">✏️ Observación</button><button class="btn btn-red btn-sm" onclick="cancelTrip('${k}')">✕ Cancelar</button></td></tr>`;
+    return `<tr><td><strong>#${t.id||k.slice(-4)}</strong></td><td>${t.clientName||'—'}</td><td>${t.driverName||'—'}</td><td style="font-size:11.5px;max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${t.origin||''}">${t.origin||'—'}</td><td style="font-size:11.5px;max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${t.destination||''}">${t.destination||'—'}</td><td style="font-size:11.5px;color:var(--accent2);white-space:nowrap">${horaRecogida}</td><td style="font-size:11.5px;color:var(--green);white-space:nowrap">${horaLlegada}</td><td>${t.completedAt?new Date(t.completedAt).toLocaleDateString('es'):'—'}</td><td style="color:var(--green)">$${t.price||0}</td><td>${t.paymentMethod||'—'}</td><td style="font-size:11px;max-width:220px;white-space:normal;overflow-wrap:break-word;color:var(--text2)" title="${obsTitle}">${obsHtml}${t.driverNotesEditedAt?' ✎':''}</td><td style="display:flex;gap:4px;flex-wrap:wrap"><button class="btn btn-ghost btn-sm" onclick="openReceipt('${k}')">🧾 Recibo</button><button class="btn btn-primary btn-sm" onclick="openEditCompleted('${k}')" style="border-color:#f59e0b;color:#f59e0b">✏️ Editar</button><button class="btn btn-primary btn-sm" onclick="openEditNotes('${k}')" style="border-color:#6366f1;color:#6366f1">✏️ Observación</button><button class="btn btn-red btn-sm" onclick="cancelTrip('${k}')">✕ Cancelar</button></td></tr>`;
   }).join('');
 }
 
