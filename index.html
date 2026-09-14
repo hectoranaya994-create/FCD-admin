@@ -9,7 +9,7 @@
 <meta name="application-name" content="FCD Admin">
 <meta name="description" content="First Class Drive — Transportation Management System">
 <meta name="theme-color" content="#0a0c10">
-<title>First Class Drive — Admin Panel v70</title>
+<title>First Class Drive — Admin Panel v72</title>
 <style>
 :root{--bg:#0a0c10;--bg2:#111318;--bg3:#1a1d24;--bg4:#22262f;--border:#2a2e38;--border2:#363b47;--text:#e8eaf0;--text2:#9aa0b0;--text3:#636878;--accent:#3b82f6;--accent2:#60a5fa;--green:#22c55e;--green2:#16a34a;--red:#ef4444;--yellow:#f59e0b;--purple:#a855f7;--sidebar-w:220px;--header-h:56px}
 *{margin:0;padding:0;box-sizing:border-box}
@@ -56,6 +56,17 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 .btn-red:hover{background:#b91c1c}
 .btn-ghost{background:transparent;border:1px solid var(--border2);color:var(--text2)}
 .btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
+.actions-cell{position:relative;text-align:center}
+.actions-menu-btn{width:34px;height:34px;border-radius:8px;border:1px solid var(--border2);background:var(--bg3);color:var(--text2);font-size:18px;font-weight:700;cursor:pointer;line-height:1}
+.actions-menu-btn:hover{border-color:var(--accent);color:var(--accent)}
+.actions-dropdown{display:none;position:fixed;background:var(--bg2);border:1px solid var(--border);border-radius:10px;min-width:180px;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,.4);overflow:hidden}
+.actions-dropdown.show{display:block}
+.actions-dropdown .item{padding:10px 14px;font-size:13px;font-weight:600;color:var(--text);cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:8px}
+.actions-dropdown .item:hover{background:var(--bg3)}
+.actions-dropdown .item.danger{color:#f87171}
+.actions-dropdown .item.accent{color:#818cf8}
+.actions-dropdown .item.warn{color:var(--yellow)}
+.actions-dropdown .sep{height:1px;background:var(--border);margin:4px 0}
 .btn-sm{padding:5px 10px;font-size:12px}
 .btn-wa{background:#25d366;color:#fff;border-radius:8px;padding:7px 13px;border:none;cursor:pointer;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:6px;transition:all .15s}
 .btn-wa:hover{background:#128c7e}
@@ -208,7 +219,7 @@ select option{background:var(--bg3);color:var(--text)}
   <nav id="sidebar">
     <div class="sidebar-logo">
       <span>🚗 First Class Drive</span>
-      <span class="ver">v70</span>
+      <span class="ver">v72</span>
     </div>
     <div class="nav-section">Principal</div>
     <div class="nav-item active" onclick="showPage('dashboard')"><span>◈</span> Dashboard</div>
@@ -499,7 +510,7 @@ select option{background:var(--bg3);color:var(--text)}
           <button class="btn btn-ghost btn-sm" onclick="clearHistoryFilter()">✕ Limpiar</button>
         </div>
         <div style="font-size:12px;color:var(--text3);margin-bottom:8px" id="hist-count"></div>
-        <div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Cliente</th><th>Conductor</th><th>Servicio</th><th>Millas</th><th>USD</th><th>Estado</th><th>Recibo</th></tr></thead><tbody id="history-list"></tbody></table></div>
+        <div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Cliente</th><th>Conductor</th><th>Servicio</th><th>Millas</th><th>USD</th><th>Estado</th><th>Observaciones</th><th>Recibo</th></tr></thead><tbody id="history-list"></tbody></table></div>
       </div>
 
       <!-- WHATSAPP -->
@@ -1164,6 +1175,29 @@ function updateDriverStats() {
 
 function updateTripsBadge(){const pending=Object.values(STATE.allTrips).filter(t=>!t.driverKey&&t.status==='pending').length;const el=document.getElementById('nb-trips');el.textContent=pending;el.style.display=pending>0?'flex':'none';}
 
+function toggleActionsMenu(event, key){
+  event.stopPropagation();
+  const menu = document.getElementById('actions-menu-'+key);
+  if(!menu) return;
+  const wasOpen = menu.classList.contains('show');
+  closeAllActionsMenus();
+  if(!wasOpen){
+    const btnRect = event.currentTarget.getBoundingClientRect();
+    menu.classList.add('show'); // mostrar primero para poder medir su ancho real
+    const menuW = menu.offsetWidth || 180;
+    let left = btnRect.right - menuW;
+    if(left < 8) left = 8;
+    let top = btnRect.bottom + 4;
+    if(top + menu.offsetHeight > window.innerHeight - 8) top = btnRect.top - menu.offsetHeight - 4;
+    menu.style.left = left + 'px';
+    menu.style.top = top + 'px';
+  }
+}
+function closeAllActionsMenus(){
+  document.querySelectorAll('.actions-dropdown.show').forEach(m=>m.classList.remove('show'));
+}
+document.addEventListener('click', closeAllActionsMenus);
+
 function renderTripsPage(){
   // Populate driver dropdown
   const drvSel = document.getElementById('trips-filter-driver');
@@ -1213,7 +1247,7 @@ function renderTripsPage(){
 
   const ab=document.getElementById('trips-active-body');
   if(active.length===0){ab.innerHTML=`<tr><td colspan="8" class="empty-state">Sin viajes activos</td></tr>`;}
-  else ab.innerHTML=active.map(([k,t])=>`<tr><td><strong>#${t.id||k.slice(-4)}</strong>${t.tripType==='vuelta'?'<span class="badge badge-purple" style="font-size:10px;margin-left:4px">\u{1f504} Vuelta</span>':t.tripType==='ida'&&t.isRoundTrip?'<span class="badge badge-blue" style="font-size:10px;margin-left:4px">\u2192 Ida</span>':''}</td><td>${t.clientName||'\u2014'}</td><td style="font-size:11.5px;color:var(--accent2);white-space:nowrap">${t.datetime?new Date(t.datetime).toLocaleString('es',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):(t.createdAt?new Date(t.createdAt).toLocaleString('es',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):' \u2014 ')}</td><td>${(t.origin||'\u2014').substring(0,16)}</td><td>${(t.destination||'\u2014').substring(0,16)}</td><td>${t.driverName||'\u2014'}</td><td>${tripStatusBadge(t.status)}${t.driverNotes?`<div style="margin-top:4px;font-size:10.5px;color:var(--text3)">📝 ${t.driverNotes.substring(0,40)}${t.driverNotes.length>40?'…':''}</div>`:''}</td><td style="display:flex;gap:4px;flex-wrap:wrap"><button class="btn btn-ghost btn-sm" onclick="openUpdateTrip('${k}')">Ver</button><button class="btn btn-primary btn-sm" onclick="openReassign('${k}')">\u{1f504} Reasignar</button><button class="btn btn-ghost btn-sm" onclick="unassignTrip('${k}')" style="border-color:var(--yellow);color:var(--yellow)">\u2298 Desasignar</button><button class="btn btn-primary btn-sm" onclick="openEditNotes('${k}')" style="border-color:#6366f1;color:#6366f1">✏️ Observación</button><button class="btn btn-red btn-sm" onclick="cancelTrip('${k}')">\u2715 Cancelar</button></td></tr>`).join('');
+  else ab.innerHTML=active.map(([k,t])=>`<tr><td><strong>#${t.id||k.slice(-4)}</strong>${t.tripType==='vuelta'?'<span class="badge badge-purple" style="font-size:10px;margin-left:4px">\u{1f504} Vuelta</span>':t.tripType==='ida'&&t.isRoundTrip?'<span class="badge badge-blue" style="font-size:10px;margin-left:4px">\u2192 Ida</span>':''}</td><td>${t.clientName||'\u2014'}</td><td style="font-size:11.5px;color:var(--accent2);white-space:nowrap">${t.datetime?new Date(t.datetime).toLocaleString('es',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):(t.createdAt?new Date(t.createdAt).toLocaleString('es',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):' \u2014 ')}</td><td>${(t.origin||'\u2014').substring(0,16)}</td><td>${(t.destination||'\u2014').substring(0,16)}</td><td>${t.driverName||'\u2014'}</td><td>${tripStatusBadge(t.status)}${t.driverNotes?`<div style="margin-top:4px;font-size:10.5px;color:var(--text3)">📝 ${t.driverNotes.substring(0,40)}${t.driverNotes.length>40?'…':''}</div>`:''}</td><td class="actions-cell"><button class="actions-menu-btn" onclick="toggleActionsMenu(event,'${k}')">⋯</button><div class="actions-dropdown" id="actions-menu-${k}"><div class="item" onclick="closeAllActionsMenus();openUpdateTrip('${k}')">👁 Ver</div><div class="item accent" onclick="closeAllActionsMenus();openReassign('${k}')">\u{1f504} Reasignar</div><div class="item warn" onclick="closeAllActionsMenus();unassignTrip('${k}')">\u2298 Desasignar</div><div class="item accent" onclick="closeAllActionsMenus();openEditNotes('${k}')">✏️ Observación</div><div class="sep"></div><div class="item danger" onclick="closeAllActionsMenus();cancelTrip('${k}')">\u2715 Cancelar</div></div></td></tr>`).join('');
 
   const pb=document.getElementById('trips-pending-body');
   if(pending.length===0){pb.innerHTML=`<tr><td colspan="7" class="empty-state">Sin viajes pendientes</td></tr>`;}
@@ -1222,7 +1256,7 @@ function renderTripsPage(){
     const idaTrip=isWaitingReturn?Object.values(STATE.allTrips).find(lt=>lt.id===t.linkedTripId):null;
     const idaDone=idaTrip&&['completed','approved'].includes(idaTrip.status);
     const estadoBadge=isWaitingReturn&&!idaDone?`<span class="badge badge-purple">\u{1f504} Esperando regreso</span>`:`<span class="badge badge-yellow">\u23f3 Pendiente</span>`;
-    return `<tr><td><strong>#${t.id||k.slice(-4)}</strong>${t.tripType==='vuelta'?'<span class="badge badge-purple" style="font-size:10px;margin-left:4px">\u{1f504} Vuelta</span>':t.tripType==='ida'&&t.isRoundTrip?'<span class="badge badge-blue" style="font-size:10px;margin-left:4px">\u2192 Ida</span>':''}</td><td><div>${t.clientName||'\u2014'}</div>${t.bookedBy&&t.bookedBy!==t.clientName?`<div style="font-size:11px;color:var(--text3)">by ${t.bookedBy}</div>`:''}</td><td style="white-space:nowrap">${t.datetime?new Date(t.datetime).toLocaleString('es',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):(t.createdAt?new Date(t.createdAt).toLocaleString('es',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):' \u2014 ')}</td><td style="font-size:11.5px;min-width:180px"><div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px" title="${t.origin||''}">${t.origin||'\u2014'}</div></td><td style="font-size:11.5px;min-width:180px"><div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px" title="${t.destination||''}">${t.destination||'\u2014'}</div></td><td>${estadoBadge}${t.adminNote?`<div style="margin-top:4px;font-size:11px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.2);border-radius:6px;padding:3px 7px;color:#fcd34d">\u{1f4ac} ${t.adminNote}</div>`:''}${t.driverNotes?`<div style="margin-top:4px;font-size:11px;background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.2);border-radius:6px;padding:3px 7px;color:#a5b4fc">📝 ${t.driverNotes}</div>`:''}</td><td style="display:flex;gap:4px;flex-wrap:wrap"><button class="btn btn-primary btn-sm" onclick="openUpdateTrip('${k}')" style="border-color:#6366f1;color:#6366f1">✏️ Editar</button><button class="btn btn-primary btn-sm" onclick="openAssign('${k}')">\u{1f697} Asignar</button>${t.driverKey?`<button class="btn btn-ghost btn-sm" onclick="openReassign('${k}')">\u{1f504} Reasignar</button><button class="btn btn-ghost btn-sm" onclick="unassignTrip('${k}')" style="border-color:var(--yellow);color:var(--yellow)">\u2298 Desasignar</button>`:''}<button class="btn btn-primary btn-sm" onclick="openEditNotes('${k}')" style="border-color:#6366f1;color:#6366f1">📝 Observación</button><button class="btn btn-red btn-sm" onclick="cancelTrip('${k}')">\u2715 Cancelar</button></td></tr>`;
+    return `<tr><td><strong>#${t.id||k.slice(-4)}</strong>${t.tripType==='vuelta'?'<span class="badge badge-purple" style="font-size:10px;margin-left:4px">\u{1f504} Vuelta</span>':t.tripType==='ida'&&t.isRoundTrip?'<span class="badge badge-blue" style="font-size:10px;margin-left:4px">\u2192 Ida</span>':''}</td><td><div>${t.clientName||'\u2014'}</div>${t.bookedBy&&t.bookedBy!==t.clientName?`<div style="font-size:11px;color:var(--text3)">by ${t.bookedBy}</div>`:''}</td><td style="white-space:nowrap">${t.datetime?new Date(t.datetime).toLocaleString('es',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):(t.createdAt?new Date(t.createdAt).toLocaleString('es',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):' \u2014 ')}</td><td style="font-size:11.5px;min-width:180px"><div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px" title="${t.origin||''}">${t.origin||'\u2014'}</div></td><td style="font-size:11.5px;min-width:180px"><div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px" title="${t.destination||''}">${t.destination||'\u2014'}</div></td><td>${estadoBadge}${t.adminNote?`<div style="margin-top:4px;font-size:11px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.2);border-radius:6px;padding:3px 7px;color:#fcd34d">\u{1f4ac} ${t.adminNote}</div>`:''}${t.driverNotes?`<div style="margin-top:4px;font-size:11px;background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.2);border-radius:6px;padding:3px 7px;color:#a5b4fc">📝 ${t.driverNotes}</div>`:''}</td><td class="actions-cell"><button class="actions-menu-btn" onclick="toggleActionsMenu(event,'${k}')">⋯</button><div class="actions-dropdown" id="actions-menu-${k}"><div class="item accent" onclick="closeAllActionsMenus();openUpdateTrip('${k}')">✏️ Editar</div><div class="item" onclick="closeAllActionsMenus();openAssign('${k}')">\u{1f697} Asignar</div>${t.driverKey?`<div class="item accent" onclick="closeAllActionsMenus();openReassign('${k}')">\u{1f504} Reasignar</div><div class="item warn" onclick="closeAllActionsMenus();unassignTrip('${k}')">\u2298 Desasignar</div>`:''}<div class="item accent" onclick="closeAllActionsMenus();openEditNotes('${k}')">📝 Observación</div><div class="sep"></div><div class="item danger" onclick="closeAllActionsMenus();cancelTrip('${k}')">\u2715 Cancelar</div></div></td></tr>`;
   }).join('');
 
   const cb=document.getElementById('trips-completed-body');
@@ -1235,7 +1269,7 @@ function renderTripsPage(){
     const obsTitle=[t.adminNote,t.driverNotes].filter(Boolean).join(' | ');
     const horaRecogida=t.startedAt?new Date(t.startedAt).toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'}):(t.arrivedAt?new Date(t.arrivedAt).toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'}):'—');
     const horaLlegada=t.completedAt?new Date(t.completedAt).toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'}):'—';
-    return `<tr><td><strong>#${t.id||k.slice(-4)}</strong></td><td>${t.clientName||'—'}</td><td>${t.driverName||'—'}</td><td style="font-size:11.5px;max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${t.origin||''}">${t.origin||'—'}</td><td style="font-size:11.5px;max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${t.destination||''}">${t.destination||'—'}</td><td style="font-size:11.5px;color:var(--accent2);white-space:nowrap">${horaRecogida}</td><td style="font-size:11.5px;color:var(--green);white-space:nowrap">${horaLlegada}</td><td>${t.completedAt?new Date(t.completedAt).toLocaleDateString('es'):'—'}</td><td style="color:var(--green)">$${t.price||0}</td><td>${t.paymentMethod||'—'}</td><td style="font-size:11px;max-width:220px;white-space:normal;overflow-wrap:break-word;color:var(--text2)" title="${obsTitle}">${obsHtml}${t.driverNotesEditedAt?' ✎':''}</td><td style="display:flex;gap:4px;flex-wrap:wrap"><button class="btn btn-ghost btn-sm" onclick="openReceipt('${k}')">🧾 Recibo</button><button class="btn btn-primary btn-sm" onclick="openEditCompleted('${k}')" style="border-color:#f59e0b;color:#f59e0b">✏️ Editar</button><button class="btn btn-primary btn-sm" onclick="openEditNotes('${k}')" style="border-color:#6366f1;color:#6366f1">✏️ Observación</button><button class="btn btn-red btn-sm" onclick="cancelTrip('${k}')">✕ Cancelar</button></td></tr>`;
+    return `<tr><td><strong>#${t.id||k.slice(-4)}</strong></td><td>${t.clientName||'—'}</td><td>${t.driverName||'—'}</td><td style="font-size:11.5px;max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${t.origin||''}">${t.origin||'—'}</td><td style="font-size:11.5px;max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${t.destination||''}">${t.destination||'—'}</td><td style="font-size:11.5px;color:var(--accent2);white-space:nowrap">${horaRecogida}</td><td style="font-size:11.5px;color:var(--green);white-space:nowrap">${horaLlegada}</td><td>${t.completedAt?new Date(t.completedAt).toLocaleDateString('es'):'—'}</td><td style="color:var(--green)">$${t.price||0}</td><td>${t.paymentMethod||'—'}</td><td style="font-size:11px;max-width:220px;white-space:normal;overflow-wrap:break-word;color:var(--text2)" title="${obsTitle}">${obsHtml}${t.driverNotesEditedAt?' ✎':''}</td><td class="actions-cell"><button class="actions-menu-btn" onclick="toggleActionsMenu(event,'${k}')">⋯</button><div class="actions-dropdown" id="actions-menu-${k}"><div class="item" onclick="closeAllActionsMenus();openReceipt('${k}')">🧾 Recibo</div><div class="item accent" onclick="closeAllActionsMenus();openEditCompleted('${k}')">✏️ Editar</div><div class="item accent" onclick="closeAllActionsMenus();openEditNotes('${k}')">✏️ Observación</div><div class="sep"></div><div class="item danger" onclick="closeAllActionsMenus();cancelTrip('${k}')">✕ Cancelar</div></div></td></tr>`;
   }).join('');
 }
 
@@ -1264,11 +1298,16 @@ function renderHistoryPage(){
   const countEl=document.getElementById('hist-count');
   if(countEl)countEl.textContent=`${filtered.length} registro(s)`;
   const tbody=document.getElementById('history-list');
-  if(filtered.length===0){tbody.innerHTML=`<tr><td colspan="8" class="empty-state">Sin registros</td></tr>`;return;}
+  if(filtered.length===0){tbody.innerHTML=`<tr><td colspan="9" class="empty-state">Sin registros</td></tr>`;return;}
   tbody.innerHTML=filtered.map(([k,t])=>{
     const refDate=t.completedAt||t.cancelledAt||t.createdAt;
     const isCancelled=['cancelled','rejected'].includes(t.status);
-    return `<tr style="${isCancelled?'opacity:0.65':''}"><td><div style="font-size:13px">${refDate?new Date(refDate).toLocaleDateString('es'):'\u2014'}</div><div style="font-size:11px;color:var(--accent2)">${t.datetime?new Date(t.datetime).toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'}):''}</div></td><td>${t.clientName||'\u2014'}</td><td>${t.driverName||'\u2014'}</td><td>${t.service||'\u2014'}</td><td>${t.miles||'\u2014'}${t.gpsTracked?'\u{1f4cd}':''}</td><td style="color:${isCancelled?'var(--text3)':'var(--green)'}">$${t.price||0}</td><td>${tripStatusBadge(t.status)}${t.cancelNote?`<div style="font-size:11px;color:var(--text3);margin-top:3px">\u{1f4dd} ${t.cancelNote}</div>`:''}</td><td>${!isCancelled?`<button class="btn btn-ghost btn-sm" onclick="openReceipt('${k}')">\u{1f9fe} Recibo</button>`:'\u2014'}</td></tr>`;
+    const obsPartes=[];
+    if(t.adminNote) obsPartes.push(`💬 ${t.adminNote}`);
+    if(t.driverNotes) obsPartes.push(`📝 ${t.driverNotes}`);
+    const obsHtml=obsPartes.length?obsPartes.join(' · '):'—';
+    const obsTitle=[t.adminNote,t.driverNotes].filter(Boolean).join(' | ');
+    return `<tr style="${isCancelled?'opacity:0.65':''}"><td><div style="font-size:13px">${refDate?new Date(refDate).toLocaleDateString('es'):'\u2014'}</div><div style="font-size:11px;color:var(--accent2)">${t.datetime?new Date(t.datetime).toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'}):''}</div></td><td>${t.clientName||'\u2014'}</td><td>${t.driverName||'\u2014'}</td><td>${t.service||'\u2014'}</td><td>${t.miles||'\u2014'}${t.gpsTracked?'\u{1f4cd}':''}</td><td style="color:${isCancelled?'var(--text3)':'var(--green)'}">$${t.price||0}</td><td>${tripStatusBadge(t.status)}${t.cancelNote?`<div style="font-size:11px;color:var(--text3);margin-top:3px">\u{1f4dd} ${t.cancelNote}</div>`:''}</td><td style="font-size:11px;max-width:220px;white-space:normal;overflow-wrap:break-word;color:var(--text2)" title="${obsTitle}">${obsHtml}</td><td>${!isCancelled?`<button class="btn btn-ghost btn-sm" onclick="openReceipt('${k}')">\u{1f9fe} Recibo</button>`:'\u2014'}</td></tr>`;
   }).join('');
 }
 function clearTripsFilter(){
