@@ -932,6 +932,17 @@ function loadFareRanges() {
 // Se usa para comparar contra <input type="date">, que también representa el día en hora local.
 // (Antes se usaba toISOString(), que convierte a UTC y hacía que viajes de la noche
 // "desaparecieran" del día correcto en los filtros de Trips e History.)
+// Hora del servicio para ordenar: usa datetime ("YYYY-MM-DDTHH:mm", hora local); si no tiene, la hora de recogida o de cierre.
+function horaServicio(t){
+  const m=String(t.datetime||'').match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+  if(m) return new Date(+m[1],+m[2]-1,+m[3],+m[4],+m[5]).getTime();
+  return t.startedAt||t.arrivedAt||t.completedAt||t.createdAt||0;
+}
+// Fecha para <input type="datetime-local"> en HORA LOCAL (toISOString la pasaba a UTC y corría la hora al guardar)
+function toLocalInputStr(value){
+  const d=new Date(value); const p=n=>String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+}
 function toLocalDateStr(value){
   const d = new Date(value);
   const y = d.getFullYear();
@@ -1236,7 +1247,7 @@ function renderTripsPage(){
     const aType=a[1].tripType==='vuelta'?1:0; const bType=b[1].tripType==='vuelta'?1:0;
     return aType-bType;
   });
-  const completed=entries.filter(([k,t])=>['completed','approved'].includes(t.status) && matchFilters(t)).sort((a,b)=>(b[1].completedAt||b[1].createdAt||0)-(a[1].completedAt||a[1].createdAt||0));
+  const completed=entries.filter(([k,t])=>['completed','approved'].includes(t.status) && matchFilters(t)).sort((a,b)=>horaServicio(a[1])-horaServicio(b[1])); // de menor a mayor por hora del servicio
 
   // Update count
   const countEl = document.getElementById('trips-filter-count');
@@ -2144,7 +2155,7 @@ function openEditCompleted(key){
   // El "precio de servicio" es lo que sobra del total actual al restarle banderazo+millas+espera,
   // así el desglose recalculado arranca cuadrando con el precio que ya tenía el viaje.
   const servicePrice = Math.max(0, totalActual - banderazo - (miles>0?miles*rate:0) - waitMin*0.50);
-  const fechaInput = t.completedAt ? new Date(t.completedAt).toISOString().slice(0,16) : '';
+  const fechaInput = t.completedAt ? toLocalInputStr(t.completedAt) : '';
   const metodos = ['Efectivo','Tarjeta','Zelle','Nequi','Daviplata'];
 
   document.getElementById('edit-completed-body').innerHTML = `
