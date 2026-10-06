@@ -1247,7 +1247,7 @@ function renderTripsPage(){
     const aType=a[1].tripType==='vuelta'?1:0; const bType=b[1].tripType==='vuelta'?1:0;
     return aType-bType;
   });
-  const completed=entries.filter(([k,t])=>['completed','approved'].includes(t.status) && matchFilters(t)).sort((a,b)=>horaServicio(a[1])-horaServicio(b[1])); // de menor a mayor por hora del servicio
+  const completed=entries.filter(([k,t])=>['completed','approved'].includes(t.status) && matchFilters(t)).sort((a,b)=>horaServicio(b[1])-horaServicio(a[1])); // de mayor a menor por fecha y hora del servicio (el más reciente arriba)
 
   // Update count
   const countEl = document.getElementById('trips-filter-count');
