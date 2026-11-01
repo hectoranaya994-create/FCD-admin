@@ -1548,15 +1548,19 @@ function populateDriverSelects(){
   const sel=document.getElementById('assign-driver-sel');if(!sel)return;
   const drivers=Object.entries(STATE.allDrivers);
   const activos=drivers.filter(([k,d])=>!d.inactive);
+  let html;
   if(drivers.length===0){
-    sel.innerHTML='<option value="">Sin conductores</option>';
+    html='<option value="">Sin conductores</option>';
   } else if(activos.length===0){
-    sel.innerHTML='<option value="">Sin conductores activos \u2014 activa alguno en Drivers</option>';
+    html='<option value="">Sin conductores activos \u2014 activa alguno en Drivers</option>';
   } else {
-    sel.innerHTML=activos.map(([k,d])=>`<option value="${k}">${d.name||k} \u2014 ${getVehicleStr(d)}</option>`).join('');
+    html=activos.map(([k,d])=>`<option value="${k}">${d.name||k} \u2014 ${getVehicleStr(d)}</option>`).join('');
   }
+  // Solo reconstruir si el listado cambió (el GPS de los conductores dispara esto cada pocos segundos)
+  if(sel.dataset.html!==html){const v=sel.value;sel.innerHTML=html;sel.dataset.html=html;if(v&&[...sel.options].some(o=>o.value===v))sel.value=v;}
   const expSel=document.getElementById('exp-driver');
-  if(expSel) expSel.innerHTML='<option>\u2014 Seleccionar \u2014</option>'+drivers.map(([k,d])=>`<option value="${k}">${d.name||k}</option>`).join('');
+  if(expSel){const eh='<option>\u2014 Seleccionar \u2014</option>'+drivers.map(([k,d])=>`<option value="${k}">${d.name||k}</option>`).join('');
+    if(expSel.dataset.html!==eh){const v=expSel.value;expSel.innerHTML=eh;expSel.dataset.html=eh;if(v&&[...expSel.options].some(o=>o.value===v))expSel.value=v;}}
 }
 
 let _tripCounter = 100;
