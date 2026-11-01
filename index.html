@@ -896,6 +896,7 @@ select option{background:var(--bg3);color:var(--text)}
 </div>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script>
 const firebaseConfig = {
   apiKey: "AIzaSyBdeKYulchRCEmDzdzuNNgU2-jhu0gzku0",
@@ -908,6 +909,70 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
+// ═══ Acceso seguro con Firebase Authentication ═══
+// Cada persona sigue entrando con su mismo usuario y clave. Por dentro se usa un correo técnico
+// (ej. kelly01@driver.firstclassdrive.app) y Firebase valida la clave en sus servidores.
+// Migración: si la cuenta aún no existe y la clave antigua es correcta, se crea sola la primera vez.
+const FCD_DOM={admin:'admin.firstclassdrive.app',driver:'driver.firstclassdrive.app',client:'client.firstclassdrive.app'};
+const fcdAuth=firebase.auth();
+function fcdPass(p){p=String(p||'');return p.length>=6?p:p+'#fcd-acceso';}
+function fcdLocal(key){return String(key||'').toLowerCase().replace(/[^a-z0-9._-]/g,c=>'-'+c.charCodeAt(0).toString(16));}
+function fcdCorreo(role,key,v){return `${fcdLocal(key)}${v>1?'.v'+v:''}@${FCD_DOM[role]}`;}
+async function fcdVersion(role,key){try{return (await db.ref(`authv/${role}/${key}`).get()).val()||1;}catch(e){return 1;}}
+async function fcdAsegurarRol(uid,role,key){
+  try{const r=db.ref(`roles/${uid}`);const s=await r.get();if(!s.exists())await r.set({role,key,since:Date.now()});}catch(e){console.warn('rol',e);}
+}
+async function fcdRol(uid){try{return (await db.ref(`roles/${uid}`).get()).val();}catch(e){return null;}}
+// Devuelve el usuario de Firebase o null si el usuario/clave no son válidos
+async function fcdEntrar(role,key,pass,claveAntiguaOk){
+  const email=fcdCorreo(role,key,await fcdVersion(role,key)),pw=fcdPass(pass);
+  try{const c=await fcdAuth.signInWithEmailAndPassword(email,pw);await fcdAsegurarRol(c.user.uid,role,key);return c.user;}
+  catch(e){
+    if(!['auth/user-not-found','auth/invalid-credential','auth/invalid-login-credentials','auth/wrong-password','auth/invalid-email'].includes(e.code))throw e;
+    let ok=false;try{ok=!!(claveAntiguaOk&&await claveAntiguaOk());}catch(_){ok=false;}
+    if(!ok)return null;
+    try{const c=await fcdAuth.createUserWithEmailAndPassword(email,pw);await fcdAsegurarRol(c.user.uid,role,key);return c.user;}
+    catch(e2){if(e2.code==='auth/email-already-in-use')return null;throw e2;}
+  }
+}
+function fcdMensajeError(e){
+  if(e&&e.code==='auth/too-many-requests')return 'Demasiados intentos. Espera unos minutos e intenta de nuevo.';
+  if(e&&e.code==='auth/network-request-failed')return 'Sin conexión. Revisa tu internet.';
+  return 'No se pudo iniciar sesión. Intenta de nuevo.';
+}
+// ── Crear / cambiar el acceso de un conductor o cliente (solo admin) ──
+// Usa una segunda conexión de Firebase para no cerrar la sesión del admin.
+// Si ya había una cuenta con otra clave, se crea una versión nueva del correo y la anterior queda sin permisos.
+let _fcdAuth2=null;
+function fcdAuthSecundaria(){
+  if(!_fcdAuth2){const a=firebase.initializeApp(firebaseConfig,'fcd-cuentas');_fcdAuth2=a.auth();_fcdAuth2.setPersistence(firebase.auth.Auth.Persistence.NONE);}
+  return _fcdAuth2;
+}
+async function fcdCrearAcceso(role,key,pass){
+  const a2=fcdAuthSecundaria(),pw=fcdPass(pass);
+  let v=await fcdVersion(role,key),cred=null;
+  for(let i=0;i<10&&!cred;i++){
+    const email=fcdCorreo(role,key,v);
+    try{cred=await a2.createUserWithEmailAndPassword(email,pw);}
+    catch(e){
+      if(e.code!=='auth/email-already-in-use')throw e;
+      try{cred=await a2.signInWithEmailAndPassword(email,pw);}catch(_){v++;}   // existe con otra clave: siguiente versión
+    }
+  }
+  if(!cred)throw new Error('No se pudo crear el acceso');
+  const uid=cred.user.uid;await a2.signOut();
+  const upd={};
+  const prev=(await db.ref('roles').orderByChild('key').equalTo(key).get()).val()||{};
+  Object.entries(prev).forEach(([u,r])=>{if(r&&r.role===role&&u!==uid)upd[`roles/${u}`]=null;});
+  upd[`roles/${uid}`]={role,key,since:Date.now()};
+  upd[`authv/${role}/${key}`]=v;
+  await db.ref().update(upd);
+}
+async function fcdQuitarAcceso(role,key){
+  const prev=(await db.ref('roles').orderByChild('key').equalTo(key).get()).val()||{};
+  const upd={};Object.entries(prev).forEach(([u,r])=>{if(r&&r.role===role)upd[`roles/${u}`]=null;});
+  if(Object.keys(upd).length)await db.ref().update(upd);
+}
 
 async function sha256(msg) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(msg));
@@ -972,8 +1037,12 @@ function switchLoginTab(t) {
 async function loginAdmin() {
   const user = document.getElementById('admin-user').value.trim();
   const pass = document.getElementById('admin-pass').value;
-  const hash = await sha256(pass);
-  if (user==='admin' && hash===ADMIN_CREDENTIALS.passHash) {
+  let u=null;
+  try{
+    u=await fcdEntrar('admin',user.toLowerCase(),pass,async()=>user==='admin'&&(await sha256(pass))===ADMIN_CREDENTIALS.passHash);
+    if(u){const r=await fcdRol(u.uid);if(!r||r.role!=='admin'){await fcdAuth.signOut();u=null;}}
+  }catch(e){console.error(e);showToast(fcdMensajeError(e),'error');return;}
+  if (u) {
     STATE.adminLogged = true;
     document.getElementById('login-screen').style.display = 'none';
     startFirebaseListeners();
@@ -999,7 +1068,7 @@ async function loginDriver() {
   const err = document.getElementById('driver-err');
   err.classList.add('show'); setTimeout(()=>err.classList.remove('show'),3000);
 }
-function logoutAdmin() { STATE.adminLogged=false; document.getElementById('login-screen').style.display='flex'; document.getElementById('admin-user').value=''; document.getElementById('admin-pass').value=''; }
+function logoutAdmin() { fcdAuth.signOut().catch(()=>{}); STATE.adminLogged=false; document.getElementById('login-screen').style.display='flex'; document.getElementById('admin-user').value=''; document.getElementById('admin-pass').value=''; }
 
 function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); document.getElementById('sidebar-overlay').classList.toggle('show'); }
 function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebar-overlay').classList.remove('show'); }
@@ -1748,9 +1817,12 @@ async function saveClientPortalAccess(){
   const c = STATE.allClients[key];
   if(!username){ showToast('Usuario requerido','error'); return; }
   if(!password && !c.portalUser){ showToast('Contrase\u00f1a requerida para cuenta nueva','error'); return; }
+  if(password && password.length<6){ showToast('La contrase\u00f1a debe tener m\u00ednimo 6 caracteres','error'); return; }
+  if(!password && c.portalUser && c.portalUser!==username){ showToast('Para cambiar el usuario escribe tambi\u00e9n una contrase\u00f1a','error'); return; }
   const portalData = {name:c.name||'',phone:c.phone||'',email:c.email||'',address:c.address||'',clientKey:key,active:active,updatedAt:Date.now()};
   if(password){const hash = await sha256(password); portalData.passwordHash = hash;}
-  if(c.portalUser && c.portalUser !== username){await db.ref(`bookingClients/${c.portalUser}`).remove();}
+  if(password){try{await fcdCrearAcceso('client',username,password);}catch(e){console.error(e);showToast('No se pudo crear el acceso: '+(e.message||e),'error');return;}}
+  if(c.portalUser && c.portalUser !== username){await db.ref(`bookingClients/${c.portalUser}`).remove();await fcdQuitarAcceso('client',c.portalUser).catch(()=>{});}
   await db.ref(`bookingClients/${username}`).update(portalData);
   await db.ref(`clients/${key}`).update({ portalUser: username, portalActive: active });
   closeModal('client-portal-modal');
@@ -1762,6 +1834,7 @@ async function removeClientPortalAccess(){
   if(!c||!c.portalUser){ showToast('Este cliente no tiene acceso portal','error'); return; }
   if(!confirm(`\u00bfEliminar acceso portal de ${c.name}?`))return;
   await db.ref(`bookingClients/${c.portalUser}`).remove();
+  await fcdQuitarAcceso('client',c.portalUser).catch(()=>{});
   await db.ref(`clients/${key}`).update({ portalUser: null, portalActive: false });
   closeModal('client-portal-modal');
   showToast('Acceso portal eliminado');
@@ -1815,11 +1888,12 @@ async function confirmResetPassword(){
   const adminAuth = document.getElementById('reset-admin-auth').value;
   const newPass = document.getElementById('reset-new-pass').value.trim();
   const confirmPass = document.getElementById('reset-confirm-pass').value.trim();
-  const hash = await sha256(adminAuth);
-  if(hash !== ADMIN_CREDENTIALS.passHash){showToast('Clave de admin incorrecta','error');return;}
-  if(!newPass||newPass.length<4){showToast('M\u00ednimo 4 caracteres','error');return;}
+  try{const cu=fcdAuth.currentUser;await cu.reauthenticateWithCredential(firebase.auth.EmailAuthProvider.credential(cu.email,fcdPass(adminAuth)));}
+  catch(e){showToast('Clave de admin incorrecta','error');return;}
+  if(!newPass||newPass.length<6){showToast('M\u00ednimo 6 caracteres','error');return;}
   if(newPass !== confirmPass){showToast('Las contrase\u00f1as no coinciden','error');return;}
-  await db.ref(`drivers/${_resetDriverKey}`).update({password:newPass, passwordHash:null});
+  try{await fcdCrearAcceso('driver',_resetDriverKey,newPass);}catch(e){console.error(e);showToast('No se pudo cambiar la clave: '+(e.message||e),'error');return;}
+  await db.ref(`drivers/${_resetDriverKey}`).update({passwordHash:await sha256(newPass), password:null, pass:null});
   closeModal('reset-pass-modal');
   showToast(`\u2705 Contrase\u00f1a actualizada correctamente`);
 }
@@ -1828,6 +1902,7 @@ async function saveDriver(){
   const password=document.getElementById('drv-password').value;
   const name=document.getElementById('drv-fullname').value.trim();
   if(!username||!name){showToast('Nombre y usuario requeridos','error');return;}
+  if(!password||password.length<6){showToast('La contrase\u00f1a debe tener m\u00ednimo 6 caracteres','error');return;}
   const existing = await db.ref(`drivers/${username}`).get();
   if(existing.exists()){
     showToast(`Ya existe un conductor con el usuario "${username}" — usa otro usuario o edítalo desde su tarjeta`,'error');
@@ -1835,6 +1910,7 @@ async function saveDriver(){
   }
   const hash=await sha256(password);
   await db.ref(`drivers/${username}`).set({name,phone:document.getElementById('drv-phone').value,email:document.getElementById('drv-email').value,license:document.getElementById('drv-license').value,vehicle:{type:document.getElementById('drv-vtype').value,color:document.getElementById('drv-vcolor').value,year:document.getElementById('drv-vyear').value},plate:document.getElementById('drv-plate').value,passwordHash:hash,status:'available',createdAt:Date.now()});
+  try{await fcdCrearAcceso('driver',username,password);}catch(e){console.error(e);showToast('Conductor guardado, pero no se pudo crear su acceso: '+(e.message||e),'error');return;}
   closeModal('driver-modal');showToast(`\u2705 Conductor ${name} guardado`);
 }
 
@@ -2247,7 +2323,11 @@ async function saveDriverEdit(key){
   if(!name){showToast('Nombre requerido','error');return;}
   const updates={name,phone:document.getElementById('drv-phone').value,email:document.getElementById('drv-email').value,license:document.getElementById('drv-license').value,plate:document.getElementById('drv-plate').value,vehicle:{type:document.getElementById('drv-vtype').value,color:document.getElementById('drv-vcolor').value,year:document.getElementById('drv-vyear').value},updatedAt:Date.now()};
   const newPass=document.getElementById('drv-password').value;
-  if(newPass&&newPass.length>=4){const h=await sha256(newPass);updates.passwordHash=h;}
+  if(newPass&&newPass.length<6){showToast('La contrase\u00f1a debe tener m\u00ednimo 6 caracteres','error');return;}
+  if(newPass){
+    try{await fcdCrearAcceso('driver',key,newPass);}catch(e){console.error(e);showToast('No se pudo cambiar la clave: '+(e.message||e),'error');return;}
+    updates.passwordHash=await sha256(newPass);
+  }
   await db.ref(`drivers/${key}`).update(updates);
   const saveBtn=document.querySelector('#driver-modal .modal-footer .btn-primary');
   if(saveBtn){saveBtn.setAttribute('onclick','saveDriver()');saveBtn.textContent='\u2713 Guardar conductor';}
